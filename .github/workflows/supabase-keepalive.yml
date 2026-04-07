@@ -1,0 +1,31 @@
+name: Supabase Keep-Alive
+
+# Supabase 免費方案：7 天無請求後專案會被暫停。
+# 此 Workflow 每日發送一次請求，確保專案持續存活。
+
+on:
+  schedule:
+    - cron: '0 2 * * *'   # 每日 02:00 UTC（台灣時間 10:00）
+  workflow_dispatch:        # 允許手動觸發（測試用）
+
+jobs:
+  ping:
+    name: Ping Supabase REST API
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Ping Supabase
+        run: |
+          HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" \
+            "${{ secrets.SUPABASE_URL }}/rest/v1/" \
+            -H "apikey: ${{ secrets.SUPABASE_ANON_KEY }}")
+
+          echo "HTTP Status: $HTTP_STATUS"
+
+          if [ "$HTTP_STATUS" -lt 200 ] || [ "$HTTP_STATUS" -ge 300 ]; then
+            echo "::error::Supabase ping 失敗，HTTP $HTTP_STATUS"
+            exit 1
+          fi
+
+          echo "Supabase ping 成功 (HTTP $HTTP_STATUS)"

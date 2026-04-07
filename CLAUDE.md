@@ -194,7 +194,7 @@ plugins {
 - [x] 低電量觸發本地 Notification（顯示裝置名稱 + 電量）
 
 ### Phase 5｜維運
-- [ ] GitHub Actions 每日 ping 保持 Supabase 免費專案存活
+- [x] GitHub Actions 每日 ping 保持 Supabase 免費專案存活
 
 ---
 
