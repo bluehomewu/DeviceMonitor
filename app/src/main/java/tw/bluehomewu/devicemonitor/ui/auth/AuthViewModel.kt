@@ -40,6 +40,28 @@ class AuthViewModel(
         }
     }
 
+    private var autoSignInAttempted = false
+
+    /**
+     * App 啟動時（Session 遺失後）靜默嘗試用已授權的 Google 帳號重新登入。
+     * 每次 ViewModel 生命週期內只嘗試一次，避免重複觸發。
+     */
+    fun tryAutoSignIn(activity: Activity) {
+        if (autoSignInAttempted) return
+        autoSignInAttempted = true
+        viewModelScope.launch {
+            _state.value = AuthState.Loading
+            googleAuthManager.silentSignIn(activity)
+                .onSuccess {
+                    val userId = supabase.auth.currentUserOrNull()?.id ?: ""
+                    _state.value = AuthState.LoggedIn(userId)
+                }
+                .onFailure {
+                    _state.value = AuthState.LoggedOut
+                }
+        }
+    }
+
     fun signIn(activity: Activity) {
         viewModelScope.launch {
             _state.value = AuthState.Loading

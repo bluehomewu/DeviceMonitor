@@ -8,6 +8,7 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
@@ -19,10 +20,12 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -48,88 +51,115 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        val themePrefs = getSharedPreferences("app_prefs", MODE_PRIVATE)
         enableEdgeToEdge()
         setContent {
-            DeviceMonitorTheme {
-                val authVm: AuthViewModel = viewModel(
-                    factory = AuthViewModel.factory(application)
+            val systemDark = isSystemInDarkTheme()
+            var isDarkTheme by rememberSaveable {
+                mutableStateOf(
+                    if (themePrefs.contains("dark_theme")) themePrefs.getBoolean("dark_theme", false)
+                    else systemDark
                 )
-                val authState by authVm.state.collectAsStateWithLifecycle()
-
-                val permLauncher = rememberLauncherForActivityResult(
-                    ActivityResultContracts.RequestMultiplePermissions()
-                ) {}
-
-                LaunchedEffect(Unit) {
-                    val perms = buildList {
-                        add(Manifest.permission.ACCESS_FINE_LOCATION)
-                        add(Manifest.permission.READ_PHONE_STATE)
-                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU)
-                            add(Manifest.permission.POST_NOTIFICATIONS)
-                    }
-                    permLauncher.launch(perms.toTypedArray())
+            }
+            val toggleTheme: () -> Unit = remember(isDarkTheme) {
+                {
+                    isDarkTheme = !isDarkTheme
+                    themePrefs.edit().putBoolean("dark_theme", isDarkTheme).apply()
                 }
+            }
 
-                when (authState) {
-                    AuthState.Loading -> {
-                        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                            CircularProgressIndicator()
+            DeviceMonitorTheme(darkTheme = isDarkTheme) {
+                // Surface 確保背景色隨 theme 正確顯示（登入頁、載入畫面皆適用）
+                Surface(modifier = Modifier.fillMaxSize()) {
+                    val authVm: AuthViewModel = viewModel(
+                        factory = AuthViewModel.factory(application)
+                    )
+                    val authState by authVm.state.collectAsStateWithLifecycle()
+
+                    val permLauncher = rememberLauncherForActivityResult(
+                        ActivityResultContracts.RequestMultiplePermissions()
+                    ) {}
+
+                    LaunchedEffect(Unit) {
+                        val perms = buildList {
+                            add(Manifest.permission.ACCESS_FINE_LOCATION)
+                            add(Manifest.permission.READ_PHONE_STATE)
+                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU)
+                                add(Manifest.permission.POST_NOTIFICATIONS)
+                        }
+                        permLauncher.launch(perms.toTypedArray())
+                    }
+
+                    // 當 Session 遺失（APK 更新後），嘗試靜默重新登入
+                    LaunchedEffect(authState) {
+                        if (authState == AuthState.LoggedOut) {
+                            authVm.tryAutoSignIn(this@MainActivity)
                         }
                     }
 
-                    AuthState.LoggedOut, is AuthState.Error -> {
-                        LoginScreen(vm = authVm)
-                    }
-
-                    is AuthState.LoggedIn -> {
-                        val deviceVm: DeviceInfoViewModel = viewModel()
-                        val listVm: DeviceListViewModel = viewModel(
-                            factory = DeviceListViewModel.factory()
-                        )
-                        var selectedTab by rememberSaveable { mutableStateOf(MainTab.MY_DEVICE) }
-
-                        LaunchedEffect(Unit) {
-                            lifecycleScope.launch {
-                                repeatOnLifecycle(Lifecycle.State.RESUMED) {
-                                    deviceVm.refreshDeviceAdminStatus()
-                                }
+                    when (authState) {
+                        AuthState.Loading -> {
+                            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                                CircularProgressIndicator()
                             }
                         }
 
-                        Scaffold(
-                            bottomBar = {
-                                NavigationBar {
-                                    NavigationBarItem(
-                                        selected = selectedTab == MainTab.MY_DEVICE,
-                                        onClick = { selectedTab = MainTab.MY_DEVICE },
-                                        icon = {
-                                            Icon(Icons.Default.PhoneAndroid, contentDescription = null)
-                                        },
-                                        label = { Text("我的裝置") }
-                                    )
-                                    NavigationBarItem(
-                                        selected = selectedTab == MainTab.ALL_DEVICES,
-                                        onClick = { selectedTab = MainTab.ALL_DEVICES },
-                                        icon = {
-                                            Icon(Icons.Default.Devices, contentDescription = null)
-                                        },
-                                        label = { Text("監控清單") }
-                                    )
+                        AuthState.LoggedOut, is AuthState.Error -> {
+                            LoginScreen(vm = authVm)
+                        }
+
+                        is AuthState.LoggedIn -> {
+                            val deviceVm: DeviceInfoViewModel = viewModel()
+                            val listVm: DeviceListViewModel = viewModel(
+                                factory = DeviceListViewModel.factory()
+                            )
+                            var selectedTab by rememberSaveable { mutableStateOf(MainTab.MY_DEVICE) }
+
+                            LaunchedEffect(Unit) {
+                                lifecycleScope.launch {
+                                    repeatOnLifecycle(Lifecycle.State.RESUMED) {
+                                        deviceVm.refreshDeviceAdminStatus()
+                                    }
                                 }
                             }
-                        ) { innerPadding ->
-                            when (selectedTab) {
-                                MainTab.MY_DEVICE ->
-                                    DeviceInfoScreen(
-                                        modifier = Modifier.padding(innerPadding),
-                                        vm = deviceVm,
-                                        onSignOut = { authVm.signOut() }
-                                    )
-                                MainTab.ALL_DEVICES ->
-                                    DeviceListScreen(
-                                        modifier = Modifier.padding(innerPadding),
-                                        vm = listVm
-                                    )
+
+                            Scaffold(
+                                bottomBar = {
+                                    NavigationBar {
+                                        NavigationBarItem(
+                                            selected = selectedTab == MainTab.MY_DEVICE,
+                                            onClick = { selectedTab = MainTab.MY_DEVICE },
+                                            icon = {
+                                                Icon(Icons.Default.PhoneAndroid, contentDescription = null)
+                                            },
+                                            label = { Text("我的裝置") }
+                                        )
+                                        NavigationBarItem(
+                                            selected = selectedTab == MainTab.ALL_DEVICES,
+                                            onClick = { selectedTab = MainTab.ALL_DEVICES },
+                                            icon = {
+                                                Icon(Icons.Default.Devices, contentDescription = null)
+                                            },
+                                            label = { Text("監控清單") }
+                                        )
+                                    }
+                                }
+                            ) { innerPadding ->
+                                when (selectedTab) {
+                                    MainTab.MY_DEVICE ->
+                                        DeviceInfoScreen(
+                                            modifier = Modifier.padding(innerPadding),
+                                            vm = deviceVm,
+                                            isDarkTheme = isDarkTheme,
+                                            onToggleTheme = toggleTheme,
+                                            onSignOut = { authVm.signOut() }
+                                        )
+                                    MainTab.ALL_DEVICES ->
+                                        DeviceListScreen(
+                                            modifier = Modifier.padding(innerPadding),
+                                            vm = listVm
+                                        )
+                                }
                             }
                         }
                     }

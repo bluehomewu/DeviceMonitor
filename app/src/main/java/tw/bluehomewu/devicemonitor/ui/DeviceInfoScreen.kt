@@ -14,9 +14,14 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.DarkMode
+import androidx.compose.material.icons.filled.LightMode
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Switch
@@ -36,6 +41,8 @@ import tw.bluehomewu.devicemonitor.service.DeviceMonitorService
 fun DeviceInfoScreen(
     modifier: Modifier = Modifier,
     vm: DeviceInfoViewModel,
+    isDarkTheme: Boolean,
+    onToggleTheme: () -> Unit,
     onSignOut: () -> Unit = {}
 ) {
     val info by vm.deviceInfo.collectAsStateWithLifecycle()
@@ -57,7 +64,15 @@ fun DeviceInfoScreen(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text("裝置監控精靈", style = MaterialTheme.typography.headlineMedium)
-            TextButton(onClick = onSignOut) { Text("登出") }
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                IconButton(onClick = onToggleTheme) {
+                    Icon(
+                        imageVector = if (isDarkTheme) Icons.Default.LightMode else Icons.Default.DarkMode,
+                        contentDescription = if (isDarkTheme) "切換淺色模式" else "切換深色模式"
+                    )
+                }
+                TextButton(onClick = onSignOut) { Text("登出") }
+            }
         }
 
         // 電池

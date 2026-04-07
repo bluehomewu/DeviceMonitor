@@ -43,7 +43,7 @@ class DeviceMonitorService : Service() {
         const val NOTIF_ID = 1
         private const val TAG = "DeviceMonitorService"
         private const val BATTERY_SYNC_THRESHOLD = 5
-        private const val PERIODIC_INTERVAL_MS = 30_000L
+        private const val PERIODIC_INTERVAL_MS = 10_000L
 
         private val _isRunning = MutableStateFlow(false)
         val isRunning: StateFlow<Boolean> = _isRunning.asStateFlow()
