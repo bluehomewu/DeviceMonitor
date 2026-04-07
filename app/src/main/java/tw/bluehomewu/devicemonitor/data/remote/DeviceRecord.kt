@@ -2,7 +2,6 @@ package tw.bluehomewu.devicemonitor.data.remote
 
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
-import tw.bluehomewu.devicemonitor.data.local.entity.DeviceEntity
 
 /**
  * Supabase SELECT / Realtime Postgres Changes 回傳的完整欄位。
@@ -22,19 +21,4 @@ data class DeviceRecord(
     @SerialName("alert_threshold") val alertThreshold: Int = 20,
     @SerialName("is_online")      val isOnline: Boolean = true,
     @SerialName("updated_at")     val updatedAt: String? = null
-)
-
-fun DeviceRecord.toEntity() = DeviceEntity(
-    id = id,
-    ownerUid = ownerUid,
-    deviceName = deviceName,
-    batteryLevel = batteryLevel,
-    isCharging = isCharging,
-    networkType = networkType,
-    wifiSsid = wifiSsid,
-    carrierName = carrierName,
-    isMaster = isMaster,
-    alertThreshold = alertThreshold,
-    isOnline = isOnline,
-    updatedAt = updatedAt
 )

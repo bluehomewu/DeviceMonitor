@@ -36,7 +36,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
-import tw.bluehomewu.devicemonitor.data.local.entity.DeviceEntity
+import tw.bluehomewu.devicemonitor.data.remote.DeviceRecord
 
 @Composable
 fun DeviceListScreen(
@@ -72,7 +72,7 @@ fun DeviceListScreen(
                     DeviceCard(
                         device = device,
                         isCurrentDevice = device.deviceName == vm.currentDeviceName,
-                        onThresholdChange = { vm.setAlertThreshold(device.id, it) }
+                        onThresholdChange = { threshold -> vm.setAlertThreshold(device.id, threshold) }
                     )
                 }
             }
@@ -82,7 +82,7 @@ fun DeviceListScreen(
 
 @Composable
 private fun DeviceCard(
-    device: DeviceEntity,
+    device: DeviceRecord,
     isCurrentDevice: Boolean,
     onThresholdChange: (Int) -> Unit
 ) {

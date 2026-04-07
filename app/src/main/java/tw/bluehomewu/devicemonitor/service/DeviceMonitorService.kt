@@ -20,7 +20,6 @@ import kotlinx.coroutines.launch
 import tw.bluehomewu.devicemonitor.data.collector.BatteryCollector
 import tw.bluehomewu.devicemonitor.data.collector.NetworkCollector
 import tw.bluehomewu.devicemonitor.data.model.DeviceInfo
-import tw.bluehomewu.devicemonitor.data.remote.toEntity
 import tw.bluehomewu.devicemonitor.di.AppModule
 import kotlin.math.abs
 
@@ -29,7 +28,7 @@ class DeviceMonitorService : Service() {
     private val supabase by lazy { AppModule.supabase }
     private val deviceRepository by lazy { AppModule.deviceRepository }
     private val realtimeRepository by lazy { AppModule.realtimeRepository }
-    private val deviceDao by lazy { AppModule.deviceDao }
+    private val deviceStateHolder by lazy { AppModule.deviceStateHolder }
     private val alertNotificationManager by lazy { AppModule.alertNotificationManager }
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
@@ -76,10 +75,10 @@ class DeviceMonitorService : Service() {
                 return@launch
             }
 
-            // 1. 從 Supabase 拉取所有裝置，寫入 Room
+            // 1. 從 Supabase 拉取所有裝置，寫入記憶體快取
             runCatching {
                 val records = deviceRepository.fetchAll()
-                deviceDao.upsertAll(records.map { it.toEntity() })
+                deviceStateHolder.setAll(records)
                 Log.d(TAG, "初始載入 ${records.size} 台裝置")
             }.onFailure { Log.e(TAG, "初始載入失敗", it) }
 

@@ -12,9 +12,6 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.emitAll
-import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
@@ -30,7 +27,7 @@ class DeviceInfoViewModel(application: Application) : AndroidViewModel(applicati
     private val networkCollector = NetworkCollector(application)
     private val supabase by lazy { AppModule.supabase }
     private val deviceRepository by lazy { AppModule.deviceRepository }
-    private val deviceDao by lazy { AppModule.deviceDao }
+    private val deviceStateHolder by lazy { AppModule.deviceStateHolder }
 
     val deviceInfo: StateFlow<DeviceInfo> = combine(
         batteryCollector.observe(),
@@ -59,14 +56,9 @@ class DeviceInfoViewModel(application: Application) : AndroidViewModel(applicati
         _isDeviceAdminActive.value = dpm.isAdminActive(adminComponent)
     }
 
-    // Observe current device entity from Room to get isMaster status
-    private val currentDeviceFlow = flow {
-        val uid = supabase.auth.currentUserOrNull()?.id ?: return@flow
-        emitAll(deviceDao.observeCurrentDevice(uid, Build.MODEL))
-    }
-
-    val isMaster: StateFlow<Boolean> = currentDeviceFlow
-        .map { it?.isMaster ?: false }
+    /** isMaster 從記憶體快取中找當前裝置（依 Build.MODEL 匹配）。 */
+    val isMaster: StateFlow<Boolean> = deviceStateHolder.devices
+        .map { devices -> devices.find { it.deviceName == Build.MODEL }?.isMaster ?: false }
         .stateIn(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(5_000),
@@ -76,8 +68,8 @@ class DeviceInfoViewModel(application: Application) : AndroidViewModel(applicati
     fun setMaster(master: Boolean) {
         viewModelScope.launch {
             val uid = supabase.auth.currentUserOrNull()?.id ?: return@launch
-            val deviceId = deviceDao.observeCurrentDevice(uid, Build.MODEL).first()?.id
-                ?: return@launch
+            val deviceId = deviceStateHolder.devices.value
+                .find { it.deviceName == Build.MODEL }?.id ?: return@launch
             runCatching {
                 deviceRepository.setMaster(uid, deviceId, master)
             }
