@@ -120,6 +120,7 @@ class MainActivity : ComponentActivity() {
                                 lifecycleScope.launch {
                                     repeatOnLifecycle(Lifecycle.State.RESUMED) {
                                         deviceVm.refreshDeviceAdminStatus()
+                                        deviceVm.refreshPowerOptimizationStatus()
                                     }
                                 }
                             }

@@ -65,6 +65,7 @@ fun DeviceInfoScreen(
     val isAdminActive by vm.isDeviceAdminActive.collectAsStateWithLifecycle()
     val isMaster by vm.isMaster.collectAsStateWithLifecycle()
     val isServiceRunning by vm.isServiceRunning.collectAsStateWithLifecycle()
+    val isPowerOptimizationIgnored by vm.isPowerOptimizationIgnored.collectAsStateWithLifecycle()
     val context = LocalContext.current
 
     Column(
@@ -176,6 +177,24 @@ fun DeviceInfoScreen(
                     else
                         MaterialTheme.colorScheme.error
                 )
+                if (!isPowerOptimizationIgnored) {
+                    Spacer(modifier = Modifier.height(6.dp))
+                    Text(
+                        text = stringResource(R.string.battery_opt_warning),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.error
+                    )
+                    Spacer(modifier = Modifier.height(6.dp))
+                    OutlinedButton(
+                        onClick = { requestIgnoreBatteryOptimizations(context) },
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = ButtonDefaults.outlinedButtonColors(
+                            contentColor = MaterialTheme.colorScheme.error
+                        )
+                    ) {
+                        Text(stringResource(R.string.battery_opt_disable))
+                    }
+                }
                 Spacer(modifier = Modifier.height(8.dp))
                 Button(
                     onClick = { vm.startService() },
@@ -300,6 +319,13 @@ fun DeviceInfoScreen(
             }
         }
     }
+}
+
+private fun requestIgnoreBatteryOptimizations(context: Context) {
+    val intent = Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS).apply {
+        data = android.net.Uri.parse("package:${context.packageName}")
+    }
+    context.startActivity(intent)
 }
 
 private fun activateDeviceAdmin(context: Context) {

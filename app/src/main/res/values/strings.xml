@@ -36,6 +36,8 @@
     <string name="service_status_stopped">Status: Stopped</string>
     <string name="service_button_running">Service Running</string>
     <string name="service_button_start">Start Monitor Service</string>
+    <string name="battery_opt_warning">Battery optimization is enabled — the service may be killed when the screen is off.</string>
+    <string name="battery_opt_disable">Disable Battery Optimization</string>
 
     <!-- Device admin section -->
     <string name="section_device_admin">Device Admin</string>

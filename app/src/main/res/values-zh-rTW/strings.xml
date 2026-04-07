@@ -36,6 +36,8 @@
     <string name="service_status_stopped">狀態：已停止</string>
     <string name="service_button_running">監控服務運行中</string>
     <string name="service_button_start">啟動監控服務</string>
+    <string name="battery_opt_warning">電池最佳化已啟用 — 螢幕關閉後服務可能被中止。</string>
+    <string name="battery_opt_disable">停用電池最佳化</string>
 
     <!-- Device admin section -->
     <string name="section_device_admin">裝置管理員</string>
