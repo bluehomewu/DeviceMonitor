@@ -1,6 +1,7 @@
 package tw.bluehomewu.devicemonitor.ui.devices
 
 import android.os.Build
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
@@ -13,14 +14,31 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.emitAll
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.launch
 import tw.bluehomewu.devicemonitor.data.local.dao.DeviceDao
 import tw.bluehomewu.devicemonitor.data.local.entity.DeviceEntity
+import tw.bluehomewu.devicemonitor.data.remote.DeviceRepository
 import tw.bluehomewu.devicemonitor.di.AppModule
 
 class DeviceListViewModel(
     private val supabase: SupabaseClient,
-    private val deviceDao: DeviceDao
+    private val deviceDao: DeviceDao,
+    private val deviceRepository: DeviceRepository
 ) : ViewModel() {
+
+    companion object {
+        private const val TAG = "DeviceListViewModel"
+
+        fun factory(): ViewModelProvider.Factory = viewModelFactory {
+            initializer {
+                DeviceListViewModel(
+                    supabase = AppModule.supabase,
+                    deviceDao = AppModule.deviceDao,
+                    deviceRepository = AppModule.deviceRepository
+                )
+            }
+        }
+    }
 
     /** 當前裝置名稱，用於在清單中標記自己。 */
     val currentDeviceName: String = Build.MODEL
@@ -35,14 +53,12 @@ class DeviceListViewModel(
         initialValue = emptyList()
     )
 
-    companion object {
-        fun factory(): ViewModelProvider.Factory = viewModelFactory {
-            initializer {
-                DeviceListViewModel(
-                    supabase = AppModule.supabase,
-                    deviceDao = AppModule.deviceDao
-                )
-            }
+    /** 更新指定裝置的低電量警報閾值（10–100，10% 間隔）。 */
+    fun setAlertThreshold(deviceId: String, threshold: Int) {
+        viewModelScope.launch {
+            runCatching {
+                deviceRepository.setAlertThreshold(deviceId, threshold)
+            }.onFailure { Log.e(TAG, "setAlertThreshold failed", it) }
         }
     }
 }

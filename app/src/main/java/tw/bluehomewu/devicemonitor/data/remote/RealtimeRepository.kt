@@ -10,10 +10,12 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import tw.bluehomewu.devicemonitor.data.local.dao.DeviceDao
+import tw.bluehomewu.devicemonitor.service.AlertNotificationManager
 
 class RealtimeRepository(
     private val supabase: SupabaseClient,
-    private val deviceDao: DeviceDao
+    private val deviceDao: DeviceDao,
+    private val alertNotificationManager: AlertNotificationManager
 ) {
     private var channel: RealtimeChannel? = null
 
@@ -46,8 +48,10 @@ class RealtimeRepository(
                     }
                     is PostgresAction.Update -> {
                         runCatching {
-                            deviceDao.upsert(action.decodeRecord<DeviceRecord>().toEntity())
-                            Log.d(TAG, "UPDATE: ${action.decodeRecord<DeviceRecord>().deviceName}")
+                            val record = action.decodeRecord<DeviceRecord>()
+                            deviceDao.upsert(record.toEntity())
+                            alertNotificationManager.checkAndNotify(record)
+                            Log.d(TAG, "UPDATE: ${record.deviceName}")
                         }.onFailure { Log.e(TAG, "UPDATE decode error", it) }
                     }
                     is PostgresAction.Delete -> {

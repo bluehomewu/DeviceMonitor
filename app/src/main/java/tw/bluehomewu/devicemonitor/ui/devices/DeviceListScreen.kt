@@ -19,11 +19,16 @@ import androidx.compose.material.icons.filled.Circle
 import androidx.compose.material.icons.filled.PhoneAndroid
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Slider
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -66,7 +71,8 @@ fun DeviceListScreen(
                 items(devices, key = { it.id }) { device ->
                     DeviceCard(
                         device = device,
-                        isCurrentDevice = device.deviceName == vm.currentDeviceName
+                        isCurrentDevice = device.deviceName == vm.currentDeviceName,
+                        onThresholdChange = { vm.setAlertThreshold(device.id, it) }
                     )
                 }
             }
@@ -75,7 +81,16 @@ fun DeviceListScreen(
 }
 
 @Composable
-private fun DeviceCard(device: DeviceEntity, isCurrentDevice: Boolean) {
+private fun DeviceCard(
+    device: DeviceEntity,
+    isCurrentDevice: Boolean,
+    onThresholdChange: (Int) -> Unit
+) {
+    // Local slider state initialised from Room value; syncs to Supabase on finger-lift
+    var sliderValue by remember(device.alertThreshold) {
+        mutableFloatStateOf(device.alertThreshold.toFloat())
+    }
+
     val containerColor = if (isCurrentDevice)
         MaterialTheme.colorScheme.primaryContainer
     else
@@ -85,78 +100,112 @@ private fun DeviceCard(device: DeviceEntity, isCurrentDevice: Boolean) {
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(containerColor = containerColor)
     ) {
-        Row(
-            modifier = Modifier.padding(12.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            // 裝置 icon
-            Icon(
-                imageVector = Icons.Default.PhoneAndroid,
-                contentDescription = null,
-                modifier = Modifier.size(36.dp),
-                tint = if (isCurrentDevice)
-                    MaterialTheme.colorScheme.primary
-                else
-                    MaterialTheme.colorScheme.onSurfaceVariant
-            )
-            Spacer(modifier = Modifier.width(12.dp))
+        Column(modifier = Modifier.padding(12.dp)) {
+            // ── 裝置主要資訊列 ──────────────────────────────────────
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(
+                    imageVector = Icons.Default.PhoneAndroid,
+                    contentDescription = null,
+                    modifier = Modifier.size(36.dp),
+                    tint = if (isCurrentDevice)
+                        MaterialTheme.colorScheme.primary
+                    else
+                        MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Spacer(modifier = Modifier.width(12.dp))
 
-            Column(modifier = Modifier.weight(1f)) {
-                // 裝置名稱 + 本機標記
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(
-                        text = device.deviceName,
-                        style = MaterialTheme.typography.titleSmall,
-                        fontWeight = if (isCurrentDevice) FontWeight.Bold else FontWeight.Normal
-                    )
-                    if (isCurrentDevice) {
-                        Spacer(modifier = Modifier.width(6.dp))
+                Column(modifier = Modifier.weight(1f)) {
+                    // 裝置名稱 + 本機標記 + 主裝置標記
+                    Row(verticalAlignment = Alignment.CenterVertically) {
                         Text(
-                            text = "（本機）",
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.primary
+                            text = device.deviceName,
+                            style = MaterialTheme.typography.titleSmall,
+                            fontWeight = if (isCurrentDevice) FontWeight.Bold else FontWeight.Normal
+                        )
+                        if (isCurrentDevice) {
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text(
+                                text = "（本機）",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                        }
+                        if (device.isMaster) {
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text(
+                                text = "★ 主裝置",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.tertiary
+                            )
+                        }
+                    }
+
+                    // 電量 + 網路
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        modifier = Modifier.padding(top = 4.dp)
+                    ) {
+                        Icon(
+                            imageVector = if (device.isCharging)
+                                Icons.Default.BatteryChargingFull
+                            else
+                                Icons.Default.BatteryFull,
+                            contentDescription = null,
+                            modifier = Modifier.size(16.dp)
+                        )
+                        Text(
+                            text = "${device.batteryLevel}%",
+                            style = MaterialTheme.typography.bodySmall
+                        )
+                        Text(
+                            text = "·",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Text(
+                            text = device.networkType +
+                                    (device.wifiSsid?.let { " ($it)" } ?: "") +
+                                    (device.carrierName?.let { " $it" } ?: ""),
+                            style = MaterialTheme.typography.bodySmall
                         )
                     }
                 }
 
-                // 電量 + 網路
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    modifier = Modifier.padding(top = 4.dp)
-                ) {
-                    Icon(
-                        imageVector = if (device.isCharging)
-                            Icons.Default.BatteryChargingFull
-                        else
-                            Icons.Default.BatteryFull,
-                        contentDescription = null,
-                        modifier = Modifier.size(16.dp)
-                    )
-                    Text(
-                        text = "${device.batteryLevel}%",
-                        style = MaterialTheme.typography.bodySmall
-                    )
-                    Text(
-                        text = "·",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                    Text(
-                        text = device.networkType +
-                                (device.wifiSsid?.let { " ($it)" } ?: "") +
-                                (device.carrierName?.let { " $it" } ?: ""),
-                        style = MaterialTheme.typography.bodySmall
-                    )
-                }
+                // 線上狀態指示燈
+                Icon(
+                    imageVector = Icons.Default.Circle,
+                    contentDescription = if (device.isOnline) "上線" else "離線",
+                    modifier = Modifier.size(12.dp),
+                    tint = if (device.isOnline) Color(0xFF4CAF50) else Color(0xFF9E9E9E)
+                )
             }
 
-            // 線上狀態指示燈
-            Icon(
-                imageVector = Icons.Default.Circle,
-                contentDescription = if (device.isOnline) "上線" else "離線",
-                modifier = Modifier.size(12.dp),
-                tint = if (device.isOnline) Color(0xFF4CAF50) else Color(0xFF9E9E9E)
+            // ── 警報閾值 Slider ─────────────────────────────────────
+            HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Text(
+                    text = "警報閾值",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Text(
+                    text = "${sliderValue.toInt()}%",
+                    style = MaterialTheme.typography.labelMedium,
+                    fontWeight = FontWeight.Medium
+                )
+            }
+            Slider(
+                value = sliderValue,
+                onValueChange = { sliderValue = it },
+                onValueChangeFinished = { onThresholdChange(sliderValue.toInt()) },
+                valueRange = 10f..100f,
+                steps = 8,  // 10 discrete values (10,20,...,100) → 8 intermediate steps
+                modifier = Modifier.fillMaxWidth()
             )
         }
     }

@@ -19,6 +19,7 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -39,6 +40,7 @@ fun DeviceInfoScreen(
 ) {
     val info by vm.deviceInfo.collectAsStateWithLifecycle()
     val isAdminActive by vm.isDeviceAdminActive.collectAsStateWithLifecycle()
+    val isMaster by vm.isMaster.collectAsStateWithLifecycle()
     val context = LocalContext.current
 
     Column(
@@ -75,6 +77,34 @@ fun DeviceInfoScreen(
                 info.carrierName?.let { add("電信商" to it) }
             }
         )
+
+        // 主裝置設定
+        Card(modifier = Modifier.fillMaxWidth()) {
+            Column(modifier = Modifier.padding(16.dp)) {
+                Text("主裝置設定", style = MaterialTheme.typography.titleMedium)
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = "主裝置負責接收所有同帳號裝置的低電量警報",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = if (isMaster) "目前為主裝置" else "設為主裝置",
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                    Switch(
+                        checked = isMaster,
+                        onCheckedChange = { vm.setMaster(it) }
+                    )
+                }
+            }
+        }
 
         // 監控服務
         Card(modifier = Modifier.fillMaxWidth()) {

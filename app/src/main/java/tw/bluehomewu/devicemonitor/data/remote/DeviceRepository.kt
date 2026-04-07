@@ -44,6 +44,37 @@ class DeviceRepository(private val supabase: SupabaseClient) {
         }
     }
 
+    /** 設定主裝置：先清除本帳號所有主裝置旗標，再標記指定 deviceId 為主裝置。 */
+    suspend fun setMaster(ownerUid: String, deviceId: String, isMaster: Boolean) {
+        if (isMaster) {
+            supabase.from("devices").update(
+                { set("is_master", false) }
+            ) {
+                filter { eq("owner_uid", ownerUid) }
+            }
+            supabase.from("devices").update(
+                { set("is_master", true) }
+            ) {
+                filter { eq("id", deviceId) }
+            }
+        } else {
+            supabase.from("devices").update(
+                { set("is_master", false) }
+            ) {
+                filter { eq("id", deviceId) }
+            }
+        }
+    }
+
+    /** 更新指定裝置的低電量警報閾值（10% 間隔，10–100）。 */
+    suspend fun setAlertThreshold(deviceId: String, threshold: Int) {
+        supabase.from("devices").update(
+            { set("alert_threshold", threshold) }
+        ) {
+            filter { eq("id", deviceId) }
+        }
+    }
+
     private fun String.toDbNetworkType(): String = when (this) {
         "Wi-Fi"  -> "WIFI"
         "LTE"    -> "LTE"

@@ -30,6 +30,7 @@ class DeviceMonitorService : Service() {
     private val deviceRepository by lazy { AppModule.deviceRepository }
     private val realtimeRepository by lazy { AppModule.realtimeRepository }
     private val deviceDao by lazy { AppModule.deviceDao }
+    private val alertNotificationManager by lazy { AppModule.alertNotificationManager }
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private val batteryCollector by lazy { BatteryCollector(this) }
@@ -46,6 +47,7 @@ class DeviceMonitorService : Service() {
     override fun onCreate() {
         super.onCreate()
         createNotificationChannel()
+        alertNotificationManager.createChannel()
         startForeground(NOTIF_ID, buildNotification("初始化中…"))
         startMonitoring()
     }

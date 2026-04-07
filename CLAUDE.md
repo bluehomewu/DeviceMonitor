@@ -188,10 +188,10 @@ plugins {
 - [x] 底部導航（我的裝置 / 監控清單）
 
 ### Phase 4｜主裝置 & 警報
-- [ ] 主裝置設定（is_master flag）
-- [ ] 裝置清單 UI（顯示所有同帳號裝置）
-- [ ] 警報閾值設定 UI（10% 間隔，Slider）
-- [ ] 低電量觸發本地 Notification（顯示裝置名稱 + 電量）
+- [x] 主裝置設定（is_master flag）
+- [x] 裝置清單 UI（顯示所有同帳號裝置）
+- [x] 警報閾值設定 UI（10% 間隔，Slider）
+- [x] 低電量觸發本地 Notification（顯示裝置名稱 + 電量）
 
 ### Phase 5｜維運
 - [ ] GitHub Actions 每日 ping 保持 Supabase 免費專案存活

@@ -12,6 +12,7 @@ import tw.bluehomewu.devicemonitor.data.local.DeviceDatabase
 import tw.bluehomewu.devicemonitor.data.local.dao.DeviceDao
 import tw.bluehomewu.devicemonitor.data.remote.DeviceRepository
 import tw.bluehomewu.devicemonitor.data.remote.RealtimeRepository
+import tw.bluehomewu.devicemonitor.service.AlertNotificationManager
 
 /**
  * 應用程式層級的 singleton 依賴（手動 DI）。
@@ -32,19 +33,25 @@ object AppModule {
 
     // Room database — 需先呼叫 initialize()
     private lateinit var _database: DeviceDatabase
+    private lateinit var _appContext: Context
 
     val deviceDao: DeviceDao
         get() = _database.deviceDao()
 
     val deviceRepository: DeviceRepository by lazy { DeviceRepository(supabase) }
 
+    val alertNotificationManager: AlertNotificationManager by lazy {
+        AlertNotificationManager(_appContext)
+    }
+
     val realtimeRepository: RealtimeRepository by lazy {
-        RealtimeRepository(supabase, deviceDao)
+        RealtimeRepository(supabase, deviceDao, alertNotificationManager)
     }
 
     fun initialize(context: Context) {
+        _appContext = context.applicationContext
         _database = Room.databaseBuilder(
-            context.applicationContext,
+            _appContext,
             DeviceDatabase::class.java,
             "device_monitor.db"
         )

@@ -25,6 +25,10 @@ interface DeviceDao {
     @Query("DELETE FROM devices WHERE id = :id")
     suspend fun deleteById(id: String)
 
+    /** 觀察當前裝置 entity（用於取得 id、isMaster 等欄位）。 */
+    @Query("SELECT * FROM devices WHERE owner_uid = :ownerUid AND device_name = :deviceName LIMIT 1")
+    fun observeCurrentDevice(ownerUid: String, deviceName: String): Flow<DeviceEntity?>
+
     /** 登出時清除本帳號所有快取。 */
     @Query("DELETE FROM devices WHERE owner_uid = :ownerUid")
     suspend fun deleteAll(ownerUid: String)
