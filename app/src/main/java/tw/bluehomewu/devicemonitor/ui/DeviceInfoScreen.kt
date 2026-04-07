@@ -201,6 +201,7 @@ fun DeviceInfoScreen(
 
         // ── 關於 ──────────────────────────────────────────────────
         val uriHandler = LocalUriHandler.current
+        val githubUrl = stringResource(R.string.github_url)
         Card(modifier = Modifier.fillMaxWidth()) {
             Column(modifier = Modifier.padding(16.dp)) {
                 Text(stringResource(R.string.section_about), style = MaterialTheme.typography.titleMedium)
@@ -216,7 +217,7 @@ fun DeviceInfoScreen(
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .clickable { uriHandler.openUri(stringResource(R.string.github_url)) },
+                        .clickable { uriHandler.openUri(githubUrl) },
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
