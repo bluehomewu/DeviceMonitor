@@ -1,0 +1,4 @@
+<resources>
+    <string name="app_name">DeviceMonitor</string>
+    <string name="device_admin_description">啟用後可防止 App 被解除安裝，確保背景監控持續運作。</string>
+</resources>

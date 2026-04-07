@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<device-admin>
+    <uses-policies>
+        <!-- 防止 App 被一般方式解除安裝 -->
+    </uses-policies>
+</device-admin>
