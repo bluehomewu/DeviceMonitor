@@ -11,7 +11,7 @@ class DeviceRepository(private val supabase: SupabaseClient) {
      * Upsert 當前裝置狀態到 Supabase devices 表。
      * 以 (owner_uid, device_name) 為唯一鍵。
      */
-    suspend fun upsertDevice(ownerUid: String, info: DeviceInfo) {
+    suspend fun upsertDevice(ownerUid: String, info: DeviceInfo, simOperator: String? = null) {
         val row = DeviceRow(
             ownerUid = ownerUid,
             deviceName = Build.MODEL,
@@ -20,7 +20,11 @@ class DeviceRepository(private val supabase: SupabaseClient) {
             networkType = info.networkType.toDbNetworkType(),
             wifiSsid = info.wifiSsid,
             carrierName = info.carrierName,
-            isOnline = true
+            isOnline = true,
+            androidVersion = Build.VERSION.RELEASE,
+            manufacturer = Build.MANUFACTURER,
+            buildNumber = Build.DISPLAY,
+            simOperator = simOperator
         )
         supabase.from("devices").upsert(row) {
             onConflict = "owner_uid,device_name"

@@ -1,5 +1,8 @@
 package tw.bluehomewu.devicemonitor.ui.devices
 
+import android.text.format.DateUtils
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -17,6 +20,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.BatteryChargingFull
 import androidx.compose.material.icons.filled.BatteryFull
 import androidx.compose.material.icons.filled.Circle
+import androidx.compose.material.icons.filled.ExpandLess
+import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material.icons.filled.PhoneAndroid
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.Card
@@ -31,7 +36,9 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -43,6 +50,22 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import tw.bluehomewu.devicemonitor.R
 import tw.bluehomewu.devicemonitor.data.remote.DeviceRecord
+import java.time.OffsetDateTime
+import java.time.ZoneOffset
+
+private const val STALE_THRESHOLD_SECONDS = 180L  // 3 分鐘
+
+/** 判斷裝置是否逾時（距現在超過 3 分鐘未更新）。 */
+private fun isStale(updatedAt: String?): Boolean {
+    updatedAt ?: return false
+    return try {
+        val updated = OffsetDateTime.parse(updatedAt).toInstant().epochSecond
+        val now = OffsetDateTime.now(ZoneOffset.UTC).toInstant().epochSecond
+        (now - updated) > STALE_THRESHOLD_SECONDS
+    } catch (_: Exception) {
+        false
+    }
+}
 
 @Composable
 fun DeviceListScreen(
@@ -118,6 +141,10 @@ private fun DeviceCard(
     var sliderValue by remember(device.alertThreshold) {
         mutableFloatStateOf(device.alertThreshold.toFloat())
     }
+    var expanded by rememberSaveable { mutableStateOf(false) }
+
+    val stale = isStale(device.updatedAt)
+    val isEffectivelyOnline = device.isOnline && !stale
 
     val containerColor = if (isCurrentDevice)
         MaterialTheme.colorScheme.primaryContainer
@@ -125,7 +152,9 @@ private fun DeviceCard(
         MaterialTheme.colorScheme.surfaceVariant
 
     Card(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { expanded = !expanded },
         colors = CardDefaults.cardColors(containerColor = containerColor)
     ) {
         Column(modifier = Modifier.padding(12.dp)) {
@@ -197,13 +226,45 @@ private fun DeviceCard(
                 }
 
                 // 線上狀態指示燈
+                val dotColor = when {
+                    isEffectivelyOnline -> Color(0xFF4CAF50)
+                    stale -> Color(0xFFFFA000)   // amber — timed out
+                    else -> Color(0xFF9E9E9E)    // grey — offline
+                }
+                val dotDescription = when {
+                    isEffectivelyOnline -> stringResource(R.string.status_online)
+                    stale -> stringResource(R.string.status_stale)
+                    else -> stringResource(R.string.status_offline)
+                }
                 Icon(
                     imageVector = Icons.Default.Circle,
-                    contentDescription = if (device.isOnline) stringResource(R.string.status_online)
-                                        else stringResource(R.string.status_offline),
+                    contentDescription = dotDescription,
                     modifier = Modifier.size(12.dp),
-                    tint = if (device.isOnline) Color(0xFF4CAF50) else Color(0xFF9E9E9E)
+                    tint = dotColor
                 )
+                Spacer(modifier = Modifier.width(4.dp))
+                Icon(
+                    imageVector = if (expanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
+                    contentDescription = null,
+                    modifier = Modifier.size(20.dp),
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+
+            // ── 展開詳情 ────────────────────────────────────────────
+            AnimatedVisibility(visible = expanded) {
+                Column {
+                    HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
+                    DetailRow(stringResource(R.string.label_manufacturer), device.manufacturer)
+                    DetailRow(stringResource(R.string.label_android_version),
+                        device.androidVersion?.let { "Android $it" })
+                    DetailRow(stringResource(R.string.label_build_number), device.buildNumber)
+                    DetailRow(stringResource(R.string.label_sim_operator), device.simOperator)
+                    DetailRow(
+                        label = stringResource(R.string.label_last_updated),
+                        value = device.updatedAt?.let { formatRelativeTime(it) }
+                    )
+                }
             }
 
             // ── 警報閾值 Slider ─────────────────────────────────────
@@ -233,6 +294,41 @@ private fun DeviceCard(
                 modifier = Modifier.fillMaxWidth()
             )
         }
+    }
+}
+
+@Composable
+private fun DetailRow(label: String, value: String?) {
+    if (value == null) return
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 2.dp),
+        horizontalArrangement = Arrangement.SpaceBetween
+    ) {
+        Text(
+            text = label,
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+        Text(
+            text = value,
+            style = MaterialTheme.typography.bodySmall
+        )
+    }
+}
+
+private fun formatRelativeTime(updatedAt: String): String? {
+    return try {
+        val epochMs = OffsetDateTime.parse(updatedAt).toInstant().toEpochMilli()
+        DateUtils.getRelativeTimeSpanString(
+            epochMs,
+            System.currentTimeMillis(),
+            DateUtils.SECOND_IN_MILLIS,
+            DateUtils.FORMAT_ABBREV_RELATIVE
+        ).toString()
+    } catch (_: Exception) {
+        null
     }
 }
 

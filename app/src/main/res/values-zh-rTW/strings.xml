@@ -45,6 +45,11 @@
     <string name="admin_button_disable">停用裝置管理員</string>
     <string name="admin_enable_explanation">啟用後可防止 App 被解除安裝，確保監控服務持續運作。</string>
 
+    <!-- Language section -->
+    <string name="section_language">語言</string>
+    <string name="label_language_settings">個別應用程式語言設定</string>
+    <string name="label_language_not_supported">需要 Android 13 以上</string>
+
     <!-- About section -->
     <string name="section_about">關於</string>
     <string name="label_version">版本</string>
@@ -61,6 +66,12 @@
     <string name="status_online">上線</string>
     <string name="status_offline">離線</string>
     <string name="label_alert_threshold">警報閾值</string>
+    <string name="label_manufacturer">製造商</string>
+    <string name="label_android_version">Android 版本</string>
+    <string name="label_build_number">系統版本號</string>
+    <string name="label_sim_operator">SIM 電信商</string>
+    <string name="label_last_updated">最後更新</string>
+    <string name="status_stale">離線（逾時）</string>
 
     <!-- Notifications -->
     <string name="notif_channel_monitor_name">裝置監控</string>

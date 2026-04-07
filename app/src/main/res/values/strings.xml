@@ -45,6 +45,11 @@
     <string name="admin_button_disable">Disable Device Admin</string>
     <string name="admin_enable_explanation">Enables protection against app uninstall to keep the monitoring service running.</string>
 
+    <!-- Language section -->
+    <string name="section_language">Language</string>
+    <string name="label_language_settings">Per-App Language Settings</string>
+    <string name="label_language_not_supported">Requires Android 13+</string>
+
     <!-- About section -->
     <string name="section_about">About</string>
     <string name="label_version">Version</string>
@@ -61,6 +66,12 @@
     <string name="status_online">Online</string>
     <string name="status_offline">Offline</string>
     <string name="label_alert_threshold">Alert Threshold</string>
+    <string name="label_manufacturer">Manufacturer</string>
+    <string name="label_android_version">Android Version</string>
+    <string name="label_build_number">Build Number</string>
+    <string name="label_sim_operator">SIM Operator</string>
+    <string name="label_last_updated">Last Updated</string>
+    <string name="status_stale">Offline (Timed Out)</string>
 
     <!-- Notifications -->
     <string name="notif_channel_monitor_name">Device Monitor</string>

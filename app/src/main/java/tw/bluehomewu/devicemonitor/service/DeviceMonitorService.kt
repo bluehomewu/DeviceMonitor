@@ -4,8 +4,10 @@ import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.Service
+import android.content.Context
 import android.content.Intent
 import android.os.IBinder
+import android.telephony.TelephonyManager
 import android.util.Log
 import androidx.core.app.NotificationCompat
 import io.github.jan.supabase.auth.auth
@@ -42,6 +44,9 @@ class DeviceMonitorService : Service() {
     /** 事件驅動 collector 採集到的最新本機資訊，供定時上傳使用。 */
     @Volatile private var latestInfo: DeviceInfo? = null
 
+    /** SIM 電信商名稱，啟動時取一次即可。 */
+    private var simOperator: String? = null
+
     companion object {
         const val CHANNEL_ID = "device_monitor"
         const val NOTIF_ID = 1
@@ -57,6 +62,8 @@ class DeviceMonitorService : Service() {
     override fun onCreate() {
         super.onCreate()
         _isRunning.value = true
+        val tm = getSystemService(Context.TELEPHONY_SERVICE) as TelephonyManager
+        simOperator = tm.simOperatorName.takeIf { it.isNotBlank() }
         createNotificationChannel()
         alertNotificationManager.createChannel()
         startForeground(NOTIF_ID, buildNotification(getString(R.string.notif_initializing)))
@@ -136,7 +143,7 @@ class DeviceMonitorService : Service() {
         scope.launch {
             while (isActive) {
                 delay(UPLOAD_INTERVAL_MS)
-                latestInfo?.let { syncToSupabase(it, "定時上傳") }
+                latestInfo?.let { syncToSupabase(it, "定時上傳") }  // simOperator via field
             }
         }
 
@@ -161,7 +168,7 @@ class DeviceMonitorService : Service() {
                 return@launch
             }
             runCatching {
-                deviceRepository.upsertDevice(uid, info)
+                deviceRepository.upsertDevice(uid, info, simOperator)
                 Log.d(TAG, "[$reason] upsert 成功：電量=${info.batteryLevel}% 網路=${info.networkType}")
             }.onFailure { Log.e(TAG, "[$reason] upsert 失敗", it) }
             updateNotification(info)

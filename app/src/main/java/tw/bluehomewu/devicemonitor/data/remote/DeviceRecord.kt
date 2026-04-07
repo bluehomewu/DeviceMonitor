@@ -19,6 +19,10 @@ data class DeviceRecord(
     @SerialName("carrier_name")   val carrierName: String? = null,
     @SerialName("is_master")      val isMaster: Boolean = false,
     @SerialName("alert_threshold") val alertThreshold: Int = 20,
-    @SerialName("is_online")      val isOnline: Boolean = true,
-    @SerialName("updated_at")     val updatedAt: String? = null
+    @SerialName("is_online")        val isOnline: Boolean = true,
+    @SerialName("updated_at")       val updatedAt: String? = null,
+    @SerialName("android_version")  val androidVersion: String? = null,
+    @SerialName("manufacturer")     val manufacturer: String? = null,
+    @SerialName("build_number")     val buildNumber: String? = null,
+    @SerialName("sim_operator")     val simOperator: String? = null
 )
