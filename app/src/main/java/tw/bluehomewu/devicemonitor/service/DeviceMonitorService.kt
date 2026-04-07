@@ -7,6 +7,7 @@ import android.app.Service
 import android.content.Context
 import android.content.Intent
 import android.os.IBinder
+import android.os.PowerManager
 import android.telephony.TelephonyManager
 import android.util.Log
 import androidx.core.app.NotificationCompat
@@ -47,6 +48,13 @@ class DeviceMonitorService : Service() {
     /** SIM 電信商名稱，啟動時取一次即可。 */
     private var simOperator: String? = null
 
+    /**
+     * PARTIAL_WAKE_LOCK：讓 CPU 在螢幕關閉後仍持續運作。
+     * 若無此 Lock，CPU 會進入休眠，Dispatchers.IO 的 coroutine 全部暫停，
+     * 導致定時上傳停止、Realtime 連線中斷。
+     */
+    private lateinit var wakeLock: PowerManager.WakeLock
+
     companion object {
         const val CHANNEL_ID = "device_monitor"
         const val NOTIF_ID = 1
@@ -62,6 +70,12 @@ class DeviceMonitorService : Service() {
     override fun onCreate() {
         super.onCreate()
         _isRunning.value = true
+
+        // 取得 WakeLock，確保 CPU 在螢幕關閉後仍持續執行 coroutine
+        val pm = getSystemService(Context.POWER_SERVICE) as PowerManager
+        wakeLock = pm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "DeviceMonitor::ServiceWakeLock")
+        wakeLock.acquire()
+
         val tm = getSystemService(Context.TELEPHONY_SERVICE) as TelephonyManager
         simOperator = tm.simOperatorName.takeIf { it.isNotBlank() }
         createNotificationChannel()
@@ -76,6 +90,7 @@ class DeviceMonitorService : Service() {
 
     override fun onDestroy() {
         _isRunning.value = false
+        if (::wakeLock.isInitialized && wakeLock.isHeld) wakeLock.release()
         CoroutineScope(Dispatchers.IO).launch {
             runCatching {
                 realtimeRepository.stopListening()

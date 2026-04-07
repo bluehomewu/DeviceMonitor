@@ -31,8 +31,10 @@ object AppModule {
 
     private lateinit var _appContext: Context
 
-    /** 記憶體中的裝置狀態快取（取代 Room）。 */
-    val deviceStateHolder: DeviceStateHolder by lazy { DeviceStateHolder() }
+    /** 記憶體中的裝置狀態快取（取代 Room）。SharedPreferences 用於跨 process 重啟的持久化。 */
+    val deviceStateHolder: DeviceStateHolder by lazy {
+        DeviceStateHolder(_appContext.getSharedPreferences("app_prefs", Context.MODE_PRIVATE))
+    }
 
     val deviceRepository: DeviceRepository by lazy { DeviceRepository(supabase) }
 
