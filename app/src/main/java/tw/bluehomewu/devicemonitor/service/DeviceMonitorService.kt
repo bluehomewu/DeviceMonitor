@@ -52,8 +52,8 @@ class DeviceMonitorService : Service() {
         const val NOTIF_ID = 1
         private const val TAG = "DeviceMonitorService"
         private const val BATTERY_SYNC_THRESHOLD = 5
-        private const val UPLOAD_INTERVAL_MS  = 3_000L   // 本機資訊上傳間隔
-        private const val REFRESH_INTERVAL_MS = 10_000L  // 裝置清單刷新間隔
+        private const val UPLOAD_INTERVAL_MS  = 30_000L  // 本機資訊心跳上傳間隔（即時變化由事件驅動）
+        private const val REFRESH_INTERVAL_MS = 60_000L  // 裝置清單刷新間隔（Realtime 的備援輪詢）
 
         private val _isRunning = MutableStateFlow(false)
         val isRunning: StateFlow<Boolean> = _isRunning.asStateFlow()
