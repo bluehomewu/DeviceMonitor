@@ -55,29 +55,29 @@ class DeviceListViewModel(
     val isRefreshing: StateFlow<Boolean> = _isRefreshing.asStateFlow()
 
     init {
-        // 定期自動刷新，不依賴 DeviceMonitorService 是否運行
+        // 定期自動刷新，不依賴 DeviceMonitorService 是否運行；不顯示 loading indicator
         viewModelScope.launch {
             while (isActive) {
                 delay(REFRESH_INTERVAL_MS)
-                fetchDevices()
+                fetchDevices(showLoading = false)
             }
         }
     }
 
-    /** 手動刷新（UI 按鈕觸發）。 */
+    /** 手動刷新（UI 按鈕觸發）：顯示 loading indicator。 */
     fun refresh() {
-        viewModelScope.launch { fetchDevices() }
+        viewModelScope.launch { fetchDevices(showLoading = true) }
     }
 
-    private suspend fun fetchDevices() {
+    private suspend fun fetchDevices(showLoading: Boolean) {
         if (_isRefreshing.value) return
-        _isRefreshing.value = true
+        if (showLoading) _isRefreshing.value = true
         runCatching {
             val records = deviceRepository.fetchAll()
             deviceStateHolder.setAll(records)
             Log.d(TAG, "刷新完成：${records.size} 台裝置")
         }.onFailure { Log.e(TAG, "刷新失敗", it) }
-        _isRefreshing.value = false
+        if (showLoading) _isRefreshing.value = false
     }
 
     fun setAlertThreshold(deviceId: String, threshold: Int) {

@@ -92,11 +92,9 @@ class MainActivity : ComponentActivity() {
                         permLauncher.launch(perms.toTypedArray())
                     }
 
-                    // 當 Session 遺失（APK 更新後），嘗試靜默重新登入
-                    LaunchedEffect(authState) {
-                        if (authState == AuthState.LoggedOut) {
-                            authVm.tryAutoSignIn(this@MainActivity)
-                        }
+                    // 啟動時嘗試 session 還原 + 靜默重登（整個過程維持 Loading，不閃登入頁）
+                    LaunchedEffect(Unit) {
+                        authVm.tryAutoSignIn(this@MainActivity)
                     }
 
                     when (authState) {
@@ -111,6 +109,7 @@ class MainActivity : ComponentActivity() {
                         }
 
                         is AuthState.LoggedIn -> {
+                            val displayName = (authState as AuthState.LoggedIn).displayName
                             val deviceVm: DeviceInfoViewModel = viewModel()
                             val listVm: DeviceListViewModel = viewModel(
                                 factory = DeviceListViewModel.factory()
@@ -154,6 +153,7 @@ class MainActivity : ComponentActivity() {
                                             vm = deviceVm,
                                             isDarkTheme = isDarkTheme,
                                             onToggleTheme = toggleTheme,
+                                            userDisplayName = displayName,
                                             onSignOut = { authVm.signOut() }
                                         )
                                     MainTab.ALL_DEVICES ->

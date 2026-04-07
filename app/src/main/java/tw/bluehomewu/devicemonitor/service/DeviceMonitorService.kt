@@ -39,12 +39,16 @@ class DeviceMonitorService : Service() {
     private val batteryCollector by lazy { BatteryCollector(this) }
     private val networkCollector by lazy { NetworkCollector(this) }
 
+    /** 事件驅動 collector 採集到的最新本機資訊，供定時上傳使用。 */
+    @Volatile private var latestInfo: DeviceInfo? = null
+
     companion object {
         const val CHANNEL_ID = "device_monitor"
         const val NOTIF_ID = 1
         private const val TAG = "DeviceMonitorService"
         private const val BATTERY_SYNC_THRESHOLD = 5
-        private const val PERIODIC_INTERVAL_MS = 10_000L
+        private const val UPLOAD_INTERVAL_MS  = 3_000L   // 本機資訊上傳間隔
+        private const val REFRESH_INTERVAL_MS = 10_000L  // 裝置清單刷新間隔
 
         private val _isRunning = MutableStateFlow(false)
         val isRunning: StateFlow<Boolean> = _isRunning.asStateFlow()
@@ -114,6 +118,8 @@ class DeviceMonitorService : Service() {
                     carrierName = network.carrierName
                 )
             }.collect { info ->
+                latestInfo = info  // 始終存最新值供定時上傳使用
+
                 val batteryChanged = lastLevel < 0 ||
                         abs(info.batteryLevel - lastLevel) >= BATTERY_SYNC_THRESHOLD
                 val networkChanged = info.networkType != lastNetworkType
@@ -126,10 +132,18 @@ class DeviceMonitorService : Service() {
             }
         }
 
-        // 定時 30 秒：刷新裝置清單（Realtime 失效時的備援輪詢）
+        // 每 3 秒定時上傳本機資訊
         scope.launch {
             while (isActive) {
-                delay(PERIODIC_INTERVAL_MS)
+                delay(UPLOAD_INTERVAL_MS)
+                latestInfo?.let { syncToSupabase(it, "定時上傳") }
+            }
+        }
+
+        // 每 10 秒刷新裝置清單（Realtime 失效時的備援輪詢）
+        scope.launch {
+            while (isActive) {
+                delay(REFRESH_INTERVAL_MS)
                 runCatching {
                     val records = deviceRepository.fetchAll()
                     deviceStateHolder.setAll(records)
