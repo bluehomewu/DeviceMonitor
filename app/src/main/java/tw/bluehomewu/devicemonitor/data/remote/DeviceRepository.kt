@@ -4,6 +4,8 @@ import android.os.Build
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.postgrest.from
 import tw.bluehomewu.devicemonitor.data.model.DeviceInfo
+import java.time.OffsetDateTime
+import java.time.ZoneOffset
 
 class DeviceRepository(private val supabase: SupabaseClient) {
 
@@ -24,7 +26,8 @@ class DeviceRepository(private val supabase: SupabaseClient) {
             androidVersion = Build.VERSION.RELEASE,
             manufacturer = Build.MANUFACTURER,
             buildNumber = Build.DISPLAY,
-            simOperator = simOperator
+            simOperator = simOperator,
+            updatedAt = OffsetDateTime.now(ZoneOffset.UTC).toString()
         )
         supabase.from("devices").upsert(row) {
             onConflict = "owner_uid,device_name"

@@ -26,5 +26,9 @@ data class DeviceRow(
     @SerialName("android_version")  val androidVersion: String?,
     @SerialName("manufacturer")     val manufacturer: String?,
     @SerialName("build_number")     val buildNumber: String?,
-    @SerialName("sim_operator")     val simOperator: String?
+    @SerialName("sim_operator")     val simOperator: String?,
+    // Explicitly included so the conflict-update path also refreshes this column.
+    // Postgres DEFAULT now() only fires on INSERT; without this field, upsert
+    // conflict-updates leave updated_at stale, triggering false "timed out" status.
+    @SerialName("updated_at")       val updatedAt: String
 )
