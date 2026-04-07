@@ -29,7 +29,7 @@ class DeviceListViewModel(
 
     companion object {
         private const val TAG = "DeviceListViewModel"
-        private const val REFRESH_INTERVAL_MS = 60_000L
+        private const val REFRESH_INTERVAL_MS = 30_000L
 
         fun factory(): ViewModelProvider.Factory = viewModelFactory {
             initializer {
