@@ -13,9 +13,11 @@ import android.telephony.PhoneStateListener
 import android.telephony.TelephonyDisplayInfo
 import android.telephony.TelephonyManager
 import androidx.core.content.ContextCompat
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
+import kotlinx.coroutines.withContext
 
 data class NetworkInfo(
     val networkType: String,
@@ -73,19 +75,23 @@ class NetworkCollector(private val context: Context) {
         }
         cm.registerNetworkCallback(NetworkRequest.Builder().build(), networkCallback)
 
-        // PhoneStateListener for TelephonyDisplayInfo (5G NSA/SA detection)
-        // PhoneStateListener is deprecated at API 31 but still functional; suppress warning
+        // PhoneStateListener 的無參建構子內部需要 Looper（呼叫 Looper.myLooper()）。
+        // 在 Dispatchers.IO 背景執行緒沒有 Looper 會 NPE，故切換至主執行緒建立並註冊。
         @Suppress("DEPRECATION")
-        val phoneStateListener = object : PhoneStateListener() {
-            override fun onDisplayInfoChanged(telephonyDisplayInfo: TelephonyDisplayInfo) {
-                latestDisplayInfo = telephonyDisplayInfo
-                trySend(currentNetworkInfo())
+        val phoneStateListener = withContext(Dispatchers.Main) {
+            object : PhoneStateListener() {
+                override fun onDisplayInfoChanged(telephonyDisplayInfo: TelephonyDisplayInfo) {
+                    latestDisplayInfo = telephonyDisplayInfo
+                    trySend(currentNetworkInfo())
+                }
             }
         }
 
         if (hasPermission(Manifest.permission.READ_PHONE_STATE)) {
-            @Suppress("DEPRECATION")
-            tm.listen(phoneStateListener, PhoneStateListener.LISTEN_DISPLAY_INFO_CHANGED)
+            withContext(Dispatchers.Main) {
+                @Suppress("DEPRECATION")
+                tm.listen(phoneStateListener, PhoneStateListener.LISTEN_DISPLAY_INFO_CHANGED)
+            }
         }
 
         // Emit initial state
@@ -93,8 +99,11 @@ class NetworkCollector(private val context: Context) {
 
         awaitClose {
             cm.unregisterNetworkCallback(networkCallback)
-            @Suppress("DEPRECATION")
-            tm.listen(phoneStateListener, PhoneStateListener.LISTEN_NONE)
+            // 同樣需要在有 Looper 的執行緒取消監聽
+            android.os.Handler(android.os.Looper.getMainLooper()).post {
+                @Suppress("DEPRECATION")
+                tm.listen(phoneStateListener, PhoneStateListener.LISTEN_NONE)
+            }
         }
     }
 
