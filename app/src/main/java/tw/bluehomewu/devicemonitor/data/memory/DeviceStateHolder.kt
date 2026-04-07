@@ -24,11 +24,13 @@ class DeviceStateHolder(private val prefs: SharedPreferences) {
 
     init {
         // Process 重啟時立刻還原上次快取，UI 不再空白
-        val json = prefs.getString(PREF_KEY, null) ?: return
-        try {
-            val cached = cacheJson.decodeFromString<List<DeviceRecord>>(json)
-            if (cached.isNotEmpty()) _devices.value = cached
-        } catch (_: Exception) { /* 快取損壞則忽略，等 Service 重新拉取 */ }
+        val json = prefs.getString(PREF_KEY, null)
+        if (json != null) {
+            try {
+                val cached = cacheJson.decodeFromString<List<DeviceRecord>>(json)
+                if (cached.isNotEmpty()) _devices.value = cached
+            } catch (_: Exception) { /* 快取損壞則忽略，等 Service 重新拉取 */ }
+        }
     }
 
     /** Upsert 單筆裝置（Realtime INSERT / UPDATE 時使用）。 */
