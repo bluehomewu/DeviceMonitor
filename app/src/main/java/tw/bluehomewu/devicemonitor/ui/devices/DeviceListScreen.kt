@@ -17,10 +17,13 @@ import androidx.compose.material.icons.filled.BatteryChargingFull
 import androidx.compose.material.icons.filled.BatteryFull
 import androidx.compose.material.icons.filled.Circle
 import androidx.compose.material.icons.filled.PhoneAndroid
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Text
@@ -46,13 +49,35 @@ fun DeviceListScreen(
     vm: DeviceListViewModel = viewModel(factory = DeviceListViewModel.factory())
 ) {
     val devices by vm.devices.collectAsStateWithLifecycle()
+    val isRefreshing by vm.isRefreshing.collectAsStateWithLifecycle()
 
     Column(modifier = modifier.fillMaxSize()) {
-        Text(
-            text = stringResource(R.string.device_list_title, devices.size),
-            style = MaterialTheme.typography.titleLarge,
-            modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)
-        )
+        // ── Header：與 DeviceInfoScreen 同等大小的標題 + 重新整理按鈕 ──
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 4.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = stringResource(R.string.device_list_title, devices.size),
+                style = MaterialTheme.typography.headlineMedium
+            )
+            IconButton(onClick = { vm.refresh() }, enabled = !isRefreshing) {
+                if (isRefreshing) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(20.dp),
+                        strokeWidth = 2.dp
+                    )
+                } else {
+                    Icon(
+                        imageVector = Icons.Default.Refresh,
+                        contentDescription = stringResource(R.string.action_refresh)
+                    )
+                }
+            }
+        }
 
         if (devices.isEmpty()) {
             Box(
@@ -163,9 +188,7 @@ private fun DeviceCard(
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                         Text(
-                            text = device.networkType +
-                                    (device.wifiSsid?.let { " ($it)" } ?: "") +
-                                    (device.carrierName?.let { " $it" } ?: ""),
+                            text = buildNetworkLabel(device),
                             style = MaterialTheme.typography.bodySmall
                         )
                     }
@@ -208,5 +231,20 @@ private fun DeviceCard(
                 modifier = Modifier.fillMaxWidth()
             )
         }
+    }
+}
+
+/**
+ * 組合網路顯示文字：
+ * - WiFi：顯示 SSID（無 carrier）
+ * - Cellular：顯示類型 + carrier（無 SSID）
+ * 避免因 DB 欄位不一致而混合顯示。
+ */
+private fun buildNetworkLabel(device: DeviceRecord): String {
+    val type = device.networkType
+    return if (type == "WIFI") {
+        "Wi-Fi" + (device.wifiSsid?.let { " ($it)" } ?: "")
+    } else {
+        type + (device.carrierName?.let { " $it" } ?: "")
     }
 }

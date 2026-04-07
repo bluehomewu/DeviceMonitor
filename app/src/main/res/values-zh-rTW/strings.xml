@@ -53,6 +53,7 @@
     <string name="github_url">https://github.com/bluehomewu</string>
 
     <!-- Device list screen -->
+    <string name="action_refresh">重新整理</string>
     <string name="device_list_title">監控清單（%d 台）</string>
     <string name="no_devices_hint">尚無裝置資料\n請稍候 Realtime 同步…</string>
     <string name="this_device">（本機）</string>

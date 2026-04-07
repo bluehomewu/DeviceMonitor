@@ -53,6 +53,7 @@
     <string name="github_url">https://github.com/bluehomewu</string>
 
     <!-- Device list screen -->
+    <string name="action_refresh">Refresh</string>
     <string name="device_list_title">Device List (%d)</string>
     <string name="no_devices_hint">No device data\nWaiting for Realtime sync…</string>
     <string name="this_device">(This Device)</string>

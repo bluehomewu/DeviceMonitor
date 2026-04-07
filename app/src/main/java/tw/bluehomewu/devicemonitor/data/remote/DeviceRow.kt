@@ -18,7 +18,9 @@ data class DeviceRow(
     @SerialName("battery_level") val batteryLevel: Int,
     @SerialName("is_charging")   val isCharging: Boolean,
     @SerialName("network_type")  val networkType: String,   // WIFI | LTE | 4G | 5G_NSA | 5G_SA
-    @SerialName("wifi_ssid")     val wifiSsid: String? = null,
-    @SerialName("carrier_name")  val carrierName: String? = null,
-    @SerialName("is_online")     val isOnline: Boolean = true
+    // 不加 default value：supabase-kt encodeDefaults=false 會略過等於預設值的欄位，
+    // 導致切換到行動網路時 wifi_ssid 舊值殘留在 DB。無 default 則一律序列化（含 null）。
+    @SerialName("wifi_ssid")     val wifiSsid: String?,
+    @SerialName("carrier_name")  val carrierName: String?,
+    @SerialName("is_online")     val isOnline: Boolean
 )

@@ -8,9 +8,13 @@ import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import io.github.jan.supabase.SupabaseClient
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import tw.bluehomewu.devicemonitor.data.memory.DeviceStateHolder
 import tw.bluehomewu.devicemonitor.data.remote.DeviceRecord
@@ -25,6 +29,7 @@ class DeviceListViewModel(
 
     companion object {
         private const val TAG = "DeviceListViewModel"
+        private const val REFRESH_INTERVAL_MS = 10_000L
 
         fun factory(): ViewModelProvider.Factory = viewModelFactory {
             initializer {
@@ -37,10 +42,8 @@ class DeviceListViewModel(
         }
     }
 
-    /** 當前裝置名稱，用於在清單中標記自己。 */
     val currentDeviceName: String = Build.MODEL
 
-    /** 所有同帳號裝置，由記憶體快取 Flow 驅動，Realtime 更新後自動刷新。 */
     val devices: StateFlow<List<DeviceRecord>> = deviceStateHolder.devices
         .stateIn(
             scope = viewModelScope,
@@ -48,7 +51,35 @@ class DeviceListViewModel(
             initialValue = emptyList()
         )
 
-    /** 更新指定裝置的低電量警報閾值（10–100，10% 間隔）。 */
+    private val _isRefreshing = MutableStateFlow(false)
+    val isRefreshing: StateFlow<Boolean> = _isRefreshing.asStateFlow()
+
+    init {
+        // 定期自動刷新，不依賴 DeviceMonitorService 是否運行
+        viewModelScope.launch {
+            while (isActive) {
+                delay(REFRESH_INTERVAL_MS)
+                fetchDevices()
+            }
+        }
+    }
+
+    /** 手動刷新（UI 按鈕觸發）。 */
+    fun refresh() {
+        viewModelScope.launch { fetchDevices() }
+    }
+
+    private suspend fun fetchDevices() {
+        if (_isRefreshing.value) return
+        _isRefreshing.value = true
+        runCatching {
+            val records = deviceRepository.fetchAll()
+            deviceStateHolder.setAll(records)
+            Log.d(TAG, "刷新完成：${records.size} 台裝置")
+        }.onFailure { Log.e(TAG, "刷新失敗", it) }
+        _isRefreshing.value = false
+    }
+
     fun setAlertThreshold(deviceId: String, threshold: Int) {
         viewModelScope.launch {
             runCatching {
