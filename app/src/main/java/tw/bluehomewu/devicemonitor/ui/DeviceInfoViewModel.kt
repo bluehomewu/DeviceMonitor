@@ -20,6 +20,7 @@ import tw.bluehomewu.devicemonitor.data.collector.NetworkCollector
 import tw.bluehomewu.devicemonitor.data.model.DeviceInfo
 import tw.bluehomewu.devicemonitor.di.AppModule
 import tw.bluehomewu.devicemonitor.receiver.DeviceAdminReceiver
+import tw.bluehomewu.devicemonitor.service.DeviceMonitorService
 
 class DeviceInfoViewModel(application: Application) : AndroidViewModel(application) {
 
@@ -56,6 +57,8 @@ class DeviceInfoViewModel(application: Application) : AndroidViewModel(applicati
         _isDeviceAdminActive.value = dpm.isAdminActive(adminComponent)
     }
 
+    val isServiceRunning: StateFlow<Boolean> = DeviceMonitorService.isRunning
+
     /** isMaster 從記憶體快取中找當前裝置（依 Build.MODEL 匹配）。 */
     val isMaster: StateFlow<Boolean> = deviceStateHolder.devices
         .map { devices -> devices.find { it.deviceName == Build.MODEL }?.isMaster ?: false }
@@ -68,10 +71,27 @@ class DeviceInfoViewModel(application: Application) : AndroidViewModel(applicati
     fun setMaster(master: Boolean) {
         viewModelScope.launch {
             val uid = supabase.auth.currentUserOrNull()?.id ?: return@launch
-            val deviceId = deviceStateHolder.devices.value
-                .find { it.deviceName == Build.MODEL }?.id ?: return@launch
+            val currentDevice = deviceStateHolder.devices.value
+                .find { it.deviceName == Build.MODEL } ?: return@launch
+
+            // 樂觀更新本地狀態，讓 UI 立即反應
+            if (master) {
+                // 先把其他所有裝置的 isMaster 清掉
+                deviceStateHolder.setAll(
+                    deviceStateHolder.devices.value.map { it.copy(isMaster = it.id == currentDevice.id) }
+                )
+            } else {
+                deviceStateHolder.upsert(currentDevice.copy(isMaster = false))
+            }
+
             runCatching {
-                deviceRepository.setMaster(uid, deviceId, master)
+                deviceRepository.setMaster(uid, currentDevice.id, master)
+                // REST 成功後從 Supabase 拉取最新狀態，確保先前主裝置的旗標也被清除
+                val records = deviceRepository.fetchAll()
+                deviceStateHolder.setAll(records)
+            }.onFailure {
+                // REST 失敗：回滾樂觀更新
+                deviceStateHolder.upsert(currentDevice)
             }
         }
     }

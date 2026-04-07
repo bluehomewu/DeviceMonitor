@@ -41,6 +41,7 @@ fun DeviceInfoScreen(
     val info by vm.deviceInfo.collectAsStateWithLifecycle()
     val isAdminActive by vm.isDeviceAdminActive.collectAsStateWithLifecycle()
     val isMaster by vm.isMaster.collectAsStateWithLifecycle()
+    val isServiceRunning by vm.isServiceRunning.collectAsStateWithLifecycle()
     val context = LocalContext.current
 
     Column(
@@ -110,6 +111,15 @@ fun DeviceInfoScreen(
         Card(modifier = Modifier.fillMaxWidth()) {
             Column(modifier = Modifier.padding(16.dp)) {
                 Text("背景監控服務", style = MaterialTheme.typography.titleMedium)
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = if (isServiceRunning) "狀態：運行中" else "狀態：已停止",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = if (isServiceRunning)
+                        MaterialTheme.colorScheme.primary
+                    else
+                        MaterialTheme.colorScheme.error
+                )
                 Spacer(modifier = Modifier.height(8.dp))
                 Button(
                     onClick = {
@@ -117,9 +127,10 @@ fun DeviceInfoScreen(
                             Intent(context, DeviceMonitorService::class.java)
                         )
                     },
+                    enabled = !isServiceRunning,
                     modifier = Modifier.fillMaxWidth()
                 ) {
-                    Text("啟動監控服務")
+                    Text(if (isServiceRunning) "監控服務運行中" else "啟動監控服務")
                 }
             }
         }
@@ -147,7 +158,10 @@ fun DeviceInfoScreen(
                     }
                 } else {
                     OutlinedButton(
-                        onClick = { deactivateDeviceAdmin(context) },
+                        onClick = {
+                            deactivateDeviceAdmin(context)
+                            vm.refreshDeviceAdminStatus()
+                        },
                         modifier = Modifier.fillMaxWidth(),
                         colors = ButtonDefaults.outlinedButtonColors(
                             contentColor = MaterialTheme.colorScheme.error

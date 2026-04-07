@@ -14,6 +14,9 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
@@ -41,10 +44,14 @@ class DeviceMonitorService : Service() {
         private const val TAG = "DeviceMonitorService"
         private const val BATTERY_SYNC_THRESHOLD = 5
         private const val PERIODIC_INTERVAL_MS = 30_000L
+
+        private val _isRunning = MutableStateFlow(false)
+        val isRunning: StateFlow<Boolean> = _isRunning.asStateFlow()
     }
 
     override fun onCreate() {
         super.onCreate()
+        _isRunning.value = true
         createNotificationChannel()
         alertNotificationManager.createChannel()
         startForeground(NOTIF_ID, buildNotification("初始化中…"))
@@ -56,6 +63,7 @@ class DeviceMonitorService : Service() {
     override fun onBind(intent: Intent?): IBinder? = null
 
     override fun onDestroy() {
+        _isRunning.value = false
         CoroutineScope(Dispatchers.IO).launch {
             runCatching {
                 realtimeRepository.stopListening()
@@ -117,12 +125,15 @@ class DeviceMonitorService : Service() {
             }
         }
 
-        // 定時 30 秒同步（確保 is_online 保持 true）
+        // 定時 30 秒：刷新裝置清單（Realtime 失效時的備援輪詢）
         scope.launch {
             while (isActive) {
                 delay(PERIODIC_INTERVAL_MS)
-                Log.d(TAG, "定時同步觸發")
-                // Phase 4+ 可在此加入 heartbeat upsert
+                runCatching {
+                    val records = deviceRepository.fetchAll()
+                    deviceStateHolder.setAll(records)
+                    Log.d(TAG, "定時刷新 ${records.size} 台裝置")
+                }.onFailure { Log.e(TAG, "定時刷新失敗", it) }
             }
         }
     }
