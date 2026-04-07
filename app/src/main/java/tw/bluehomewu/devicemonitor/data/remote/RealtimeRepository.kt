@@ -5,6 +5,8 @@ import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.realtime.PostgresAction
 import io.github.jan.supabase.realtime.RealtimeChannel
 import io.github.jan.supabase.realtime.channel
+import io.github.jan.supabase.realtime.decodeOldRecord
+import io.github.jan.supabase.realtime.decodeRecord
 import io.github.jan.supabase.realtime.postgresChangeFlow
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.launchIn
@@ -33,7 +35,7 @@ class RealtimeRepository(
         channel!!
             .postgresChangeFlow<PostgresAction>(schema = "public") {
                 table = "devices"
-                filter = "owner_uid=eq.$ownerUid"
+                // RLS policy 已確保只收到當前使用者的資料，無需額外 filter
             }
             .onEach { action ->
                 when (action) {
