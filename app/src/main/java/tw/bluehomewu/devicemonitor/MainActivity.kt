@@ -11,10 +11,20 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Devices
+import androidx.compose.material.icons.filled.PhoneAndroid
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Icon
+import androidx.compose.material3.NavigationBar
+import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.Lifecycle
@@ -28,7 +38,11 @@ import tw.bluehomewu.devicemonitor.ui.DeviceInfoViewModel
 import tw.bluehomewu.devicemonitor.ui.auth.AuthState
 import tw.bluehomewu.devicemonitor.ui.auth.AuthViewModel
 import tw.bluehomewu.devicemonitor.ui.auth.LoginScreen
+import tw.bluehomewu.devicemonitor.ui.devices.DeviceListScreen
+import tw.bluehomewu.devicemonitor.ui.devices.DeviceListViewModel
 import tw.bluehomewu.devicemonitor.ui.theme.DeviceMonitorTheme
+
+private enum class MainTab { MY_DEVICE, ALL_DEVICES }
 
 class MainActivity : ComponentActivity() {
 
@@ -44,48 +58,79 @@ class MainActivity : ComponentActivity() {
 
                 val permLauncher = rememberLauncherForActivityResult(
                     ActivityResultContracts.RequestMultiplePermissions()
-                ) { /* collectors degrade gracefully */ }
+                ) {}
 
                 LaunchedEffect(Unit) {
                     val perms = buildList {
                         add(Manifest.permission.ACCESS_FINE_LOCATION)
                         add(Manifest.permission.READ_PHONE_STATE)
-                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU)
                             add(Manifest.permission.POST_NOTIFICATIONS)
-                        }
                     }
                     permLauncher.launch(perms.toTypedArray())
                 }
 
-                Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-                    when (authState) {
-                        AuthState.Loading -> {
-                            Box(
-                                modifier = Modifier.fillMaxSize(),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                CircularProgressIndicator()
-                            }
+                when (authState) {
+                    AuthState.Loading -> {
+                        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                            CircularProgressIndicator()
                         }
-                        AuthState.LoggedOut, is AuthState.Error -> {
-                            LoginScreen(vm = authVm)
-                        }
-                        is AuthState.LoggedIn -> {
-                            val deviceVm: DeviceInfoViewModel = viewModel()
+                    }
 
-                            LaunchedEffect(Unit) {
-                                lifecycleScope.launch {
-                                    repeatOnLifecycle(Lifecycle.State.RESUMED) {
-                                        deviceVm.refreshDeviceAdminStatus()
-                                    }
+                    AuthState.LoggedOut, is AuthState.Error -> {
+                        LoginScreen(vm = authVm)
+                    }
+
+                    is AuthState.LoggedIn -> {
+                        val deviceVm: DeviceInfoViewModel = viewModel()
+                        val listVm: DeviceListViewModel = viewModel(
+                            factory = DeviceListViewModel.factory()
+                        )
+                        var selectedTab by rememberSaveable { mutableStateOf(MainTab.MY_DEVICE) }
+
+                        LaunchedEffect(Unit) {
+                            lifecycleScope.launch {
+                                repeatOnLifecycle(Lifecycle.State.RESUMED) {
+                                    deviceVm.refreshDeviceAdminStatus()
                                 }
                             }
+                        }
 
-                            DeviceInfoScreen(
-                                modifier = Modifier.padding(innerPadding),
-                                vm = deviceVm,
-                                onSignOut = { authVm.signOut() }
-                            )
+                        Scaffold(
+                            bottomBar = {
+                                NavigationBar {
+                                    NavigationBarItem(
+                                        selected = selectedTab == MainTab.MY_DEVICE,
+                                        onClick = { selectedTab = MainTab.MY_DEVICE },
+                                        icon = {
+                                            Icon(Icons.Default.PhoneAndroid, contentDescription = null)
+                                        },
+                                        label = { Text("我的裝置") }
+                                    )
+                                    NavigationBarItem(
+                                        selected = selectedTab == MainTab.ALL_DEVICES,
+                                        onClick = { selectedTab = MainTab.ALL_DEVICES },
+                                        icon = {
+                                            Icon(Icons.Default.Devices, contentDescription = null)
+                                        },
+                                        label = { Text("監控清單") }
+                                    )
+                                }
+                            }
+                        ) { innerPadding ->
+                            when (selectedTab) {
+                                MainTab.MY_DEVICE ->
+                                    DeviceInfoScreen(
+                                        modifier = Modifier.padding(innerPadding),
+                                        vm = deviceVm,
+                                        onSignOut = { authVm.signOut() }
+                                    )
+                                MainTab.ALL_DEVICES ->
+                                    DeviceListScreen(
+                                        modifier = Modifier.padding(innerPadding),
+                                        vm = listVm
+                                    )
+                            }
                         }
                     }
                 }

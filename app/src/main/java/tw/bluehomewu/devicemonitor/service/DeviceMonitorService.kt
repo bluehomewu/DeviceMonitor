@@ -20,14 +20,16 @@ import kotlinx.coroutines.launch
 import tw.bluehomewu.devicemonitor.data.collector.BatteryCollector
 import tw.bluehomewu.devicemonitor.data.collector.NetworkCollector
 import tw.bluehomewu.devicemonitor.data.model.DeviceInfo
-import tw.bluehomewu.devicemonitor.data.remote.DeviceRepository
+import tw.bluehomewu.devicemonitor.data.remote.toEntity
 import tw.bluehomewu.devicemonitor.di.AppModule
 import kotlin.math.abs
 
 class DeviceMonitorService : Service() {
 
     private val supabase by lazy { AppModule.supabase }
-    private val deviceRepository by lazy { DeviceRepository(supabase) }
+    private val deviceRepository by lazy { AppModule.deviceRepository }
+    private val realtimeRepository by lazy { AppModule.realtimeRepository }
+    private val deviceDao by lazy { AppModule.deviceDao }
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private val batteryCollector by lazy { BatteryCollector(this) }
@@ -53,9 +55,9 @@ class DeviceMonitorService : Service() {
     override fun onBind(intent: Intent?): IBinder? = null
 
     override fun onDestroy() {
-        // 用獨立 scope 確保 markOffline 不被主 scope.cancel() 中斷
         CoroutineScope(Dispatchers.IO).launch {
             runCatching {
+                realtimeRepository.stopListening()
                 val uid = supabase.auth.currentUserOrNull()?.id ?: return@launch
                 deviceRepository.markOffline(uid)
             }
@@ -65,6 +67,27 @@ class DeviceMonitorService : Service() {
     }
 
     private fun startMonitoring() {
+        // 初始載入 + Realtime 訂閱
+        scope.launch {
+            val uid = supabase.auth.currentUserOrNull()?.id ?: run {
+                Log.w(TAG, "使用者未登入，跳過初始載入與 Realtime")
+                return@launch
+            }
+
+            // 1. 從 Supabase 拉取所有裝置，寫入 Room
+            runCatching {
+                val records = deviceRepository.fetchAll()
+                deviceDao.upsertAll(records.map { it.toEntity() })
+                Log.d(TAG, "初始載入 ${records.size} 台裝置")
+            }.onFailure { Log.e(TAG, "初始載入失敗", it) }
+
+            // 2. 啟動 Realtime 訂閱
+            runCatching {
+                realtimeRepository.startListening(uid, scope)
+            }.onFailure { Log.e(TAG, "Realtime 訂閱失敗", it) }
+        }
+
+        // 事件驅動：當前裝置狀態變化 → upsert Supabase（Realtime 再回流更新 Room）
         scope.launch {
             var lastLevel = -1
             var lastNetworkType = ""
@@ -81,38 +104,39 @@ class DeviceMonitorService : Service() {
                     carrierName = network.carrierName
                 )
             }.collect { info ->
-                val batteryChanged = lastLevel < 0 || abs(info.batteryLevel - lastLevel) >= BATTERY_SYNC_THRESHOLD
+                val batteryChanged = lastLevel < 0 ||
+                        abs(info.batteryLevel - lastLevel) >= BATTERY_SYNC_THRESHOLD
                 val networkChanged = info.networkType != lastNetworkType
 
                 if (batteryChanged || networkChanged) {
                     lastLevel = info.batteryLevel
                     lastNetworkType = info.networkType
-                    sync(info, reason = if (networkChanged) "網路變化" else "電量變化")
+                    syncToSupabase(info, reason = if (networkChanged) "網路變化" else "電量變化")
                 }
             }
         }
 
+        // 定時 30 秒同步（確保 is_online 保持 true）
         scope.launch {
             while (isActive) {
                 delay(PERIODIC_INTERVAL_MS)
                 Log.d(TAG, "定時同步觸發")
+                // Phase 4+ 可在此加入 heartbeat upsert
             }
         }
     }
 
-    private fun sync(info: DeviceInfo, reason: String) {
+    private fun syncToSupabase(info: DeviceInfo, reason: String) {
         scope.launch {
             val uid = supabase.auth.currentUserOrNull()?.id
             if (uid == null) {
-                Log.w(TAG, "[$reason] 使用者未登入，跳過 upsert")
+                Log.w(TAG, "[$reason] 未登入，跳過 upsert")
                 return@launch
             }
             runCatching {
                 deviceRepository.upsertDevice(uid, info)
                 Log.d(TAG, "[$reason] upsert 成功：電量=${info.batteryLevel}% 網路=${info.networkType}")
-            }.onFailure { e ->
-                Log.e(TAG, "[$reason] upsert 失敗", e)
-            }
+            }.onFailure { Log.e(TAG, "[$reason] upsert 失敗", it) }
             updateNotification(info)
         }
     }
@@ -136,9 +160,7 @@ class DeviceMonitorService : Service() {
 
     private fun createNotificationChannel() {
         val channel = NotificationChannel(
-            CHANNEL_ID,
-            "裝置監控",
-            NotificationManager.IMPORTANCE_LOW
+            CHANNEL_ID, "裝置監控", NotificationManager.IMPORTANCE_LOW
         ).apply { description = "顯示裝置即時狀態" }
         (getSystemService(NOTIFICATION_SERVICE) as NotificationManager)
             .createNotificationChannel(channel)

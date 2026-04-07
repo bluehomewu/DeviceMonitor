@@ -8,7 +8,7 @@ import tw.bluehomewu.devicemonitor.data.model.DeviceInfo
 class DeviceRepository(private val supabase: SupabaseClient) {
 
     /**
-     * Upsert 裝置狀態到 Supabase devices 表。
+     * Upsert 當前裝置狀態到 Supabase devices 表。
      * 以 (owner_uid, device_name) 為唯一鍵。
      */
     suspend fun upsertDevice(ownerUid: String, info: DeviceInfo) {
@@ -27,7 +27,14 @@ class DeviceRepository(private val supabase: SupabaseClient) {
         }
     }
 
-    /** 標記裝置離線（App 關閉或 Service 停止時呼叫）。 */
+    /**
+     * 取得帳號下所有裝置（RLS 自動過濾）。
+     * 用於 App 啟動時的初始載入，後續由 Realtime 即時更新。
+     */
+    suspend fun fetchAll(): List<DeviceRecord> =
+        supabase.from("devices").select().decodeList<DeviceRecord>()
+
+    /** 標記裝置離線（Service 停止時呼叫）。 */
     suspend fun markOffline(ownerUid: String) {
         supabase.from("devices").update(
             { set("is_online", false) }

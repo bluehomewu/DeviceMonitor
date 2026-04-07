@@ -179,10 +179,13 @@ plugins {
 - [x] devices 表 upsert 實作（`DeviceRepository`）
 - [x] `DeviceMonitorService` 串接 Supabase upsert（下一步從 Phase 3 開始）
 
-### Phase 3｜即時同步
-- [ ] Supabase Realtime WebSocket 訂閱
-- [ ] 收到裝置狀態變更 → 更新本地 Room 快取
-- [ ] UI 即時刷新（Compose + StateFlow）
+### Phase 3｜即時同步 ✅ 已完成
+- [x] Supabase Realtime WebSocket 訂閱（`RealtimeRepository`，filter by owner_uid）
+- [x] 收到裝置狀態變更 → 更新本地 Room 快取（`DeviceDao.upsert/deleteById`）
+- [x] 啟動時從 Supabase 初始載入所有裝置到 Room
+- [x] `DeviceListScreen`：LazyColumn 顯示所有裝置，線上狀態指示燈
+- [x] `DeviceListViewModel`：觀察 `DeviceDao.observeAll()` Flow
+- [x] 底部導航（我的裝置 / 監控清單）
 
 ### Phase 4｜主裝置 & 警報
 - [ ] 主裝置設定（is_master flag）

@@ -4,13 +4,9 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.kotlin.serialization)
+    alias(libs.plugins.ksp)
 }
 
-// 讀取 local.properties（Supabase 金鑰、Google Client ID）
-// 在 local.properties 加入：
-//   SUPABASE_URL=https://xxxx.supabase.co
-//   SUPABASE_ANON_KEY=eyJ...
-//   GOOGLE_WEB_CLIENT_ID=xxxx.apps.googleusercontent.com
 val localProps = Properties().apply {
     val f = rootProject.file("local.properties")
     if (f.exists()) load(f.inputStream())
@@ -69,11 +65,18 @@ dependencies {
     implementation(libs.androidx.compose.ui.graphics)
     implementation(libs.androidx.compose.ui.tooling.preview)
     implementation(libs.androidx.compose.material3)
+    implementation(libs.androidx.compose.material.icons.extended)
 
-    // Supabase（Postgres + Auth）
+    // Room（本地快取）
+    implementation(libs.room.runtime)
+    implementation(libs.room.ktx)
+    ksp(libs.room.compiler)
+
+    // Supabase（Postgres + Auth + Realtime）
     implementation(platform(libs.supabase.bom))
     implementation(libs.supabase.postgrest)
     implementation(libs.supabase.auth)
+    implementation(libs.supabase.realtime)
     implementation(libs.ktor.client.okhttp)
 
     // Google Sign-In（Credential Manager）
