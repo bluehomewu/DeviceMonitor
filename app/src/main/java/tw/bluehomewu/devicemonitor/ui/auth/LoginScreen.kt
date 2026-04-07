@@ -18,9 +18,11 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import tw.bluehomewu.devicemonitor.R
 
 @Composable
 fun LoginScreen(vm: AuthViewModel) {
@@ -34,10 +36,10 @@ fun LoginScreen(vm: AuthViewModel) {
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Text("裝置監控精靈", style = MaterialTheme.typography.headlineLarge)
+        Text(stringResource(R.string.app_name), style = MaterialTheme.typography.headlineLarge)
         Spacer(modifier = Modifier.height(8.dp))
         Text(
-            "登入後即可監控所有裝置的即時狀態",
+            stringResource(R.string.login_tagline),
             style = MaterialTheme.typography.bodyMedium,
             textAlign = TextAlign.Center,
             color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -53,7 +55,7 @@ fun LoginScreen(vm: AuthViewModel) {
                     onClick = { vm.signIn(activity) },
                     modifier = Modifier.fillMaxWidth()
                 ) {
-                    Text("使用 Google 帳號登入")
+                    Text(stringResource(R.string.sign_in_google))
                 }
                 if (state is AuthState.Error) {
                     Spacer(modifier = Modifier.height(16.dp))

@@ -23,6 +23,8 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.ui.res.stringResource
+import tw.bluehomewu.devicemonitor.R
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -132,7 +134,7 @@ class MainActivity : ComponentActivity() {
                                             icon = {
                                                 Icon(Icons.Default.PhoneAndroid, contentDescription = null)
                                             },
-                                            label = { Text("我的裝置") }
+                                            label = { Text(stringResource(R.string.tab_my_device)) }
                                         )
                                         NavigationBarItem(
                                             selected = selectedTab == MainTab.ALL_DEVICES,
@@ -140,7 +142,7 @@ class MainActivity : ComponentActivity() {
                                             icon = {
                                                 Icon(Icons.Default.Devices, contentDescription = null)
                                             },
-                                            label = { Text("監控清單") }
+                                            label = { Text(stringResource(R.string.tab_device_list)) }
                                         )
                                     }
                                 }

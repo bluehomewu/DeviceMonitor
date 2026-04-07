@@ -20,6 +20,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import tw.bluehomewu.devicemonitor.R
 import tw.bluehomewu.devicemonitor.data.collector.BatteryCollector
 import tw.bluehomewu.devicemonitor.data.collector.NetworkCollector
 import tw.bluehomewu.devicemonitor.data.model.DeviceInfo
@@ -54,7 +55,7 @@ class DeviceMonitorService : Service() {
         _isRunning.value = true
         createNotificationChannel()
         alertNotificationManager.createChannel()
-        startForeground(NOTIF_ID, buildNotification("初始化中…"))
+        startForeground(NOTIF_ID, buildNotification(getString(R.string.notif_initializing)))
         startMonitoring()
     }
 
@@ -155,7 +156,7 @@ class DeviceMonitorService : Service() {
 
     private fun updateNotification(info: DeviceInfo) {
         val chargingMark = if (info.isCharging) " ⚡" else ""
-        val text = "電量 ${info.batteryLevel}%$chargingMark | ${info.networkType}" +
+        val text = getString(R.string.notif_monitor_text, info.batteryLevel, chargingMark, info.networkType) +
                 (info.wifiSsid?.let { "  ($it)" } ?: "")
         val nm = getSystemService(NOTIFICATION_SERVICE) as NotificationManager
         nm.notify(NOTIF_ID, buildNotification(text))
@@ -163,7 +164,7 @@ class DeviceMonitorService : Service() {
 
     private fun buildNotification(text: String): Notification =
         NotificationCompat.Builder(this, CHANNEL_ID)
-            .setContentTitle("裝置監控精靈")
+            .setContentTitle(getString(R.string.notif_title))
             .setContentText(text)
             .setSmallIcon(android.R.drawable.ic_dialog_info)
             .setOngoing(true)
@@ -172,8 +173,10 @@ class DeviceMonitorService : Service() {
 
     private fun createNotificationChannel() {
         val channel = NotificationChannel(
-            CHANNEL_ID, "裝置監控", NotificationManager.IMPORTANCE_LOW
-        ).apply { description = "顯示裝置即時狀態" }
+            CHANNEL_ID,
+            getString(R.string.notif_channel_monitor_name),
+            NotificationManager.IMPORTANCE_LOW
+        ).apply { description = getString(R.string.notif_channel_monitor_desc) }
         (getSystemService(NOTIFICATION_SERVICE) as NotificationManager)
             .createNotificationChannel(channel)
     }

@@ -5,6 +5,7 @@ import android.app.NotificationManager
 import android.content.Context
 import android.util.Log
 import androidx.core.app.NotificationCompat
+import tw.bluehomewu.devicemonitor.R
 import tw.bluehomewu.devicemonitor.data.remote.DeviceRecord
 
 class AlertNotificationManager(private val context: Context) {
@@ -21,8 +22,10 @@ class AlertNotificationManager(private val context: Context) {
 
     fun createChannel() {
         val channel = NotificationChannel(
-            ALERT_CHANNEL_ID, "電量警報", NotificationManager.IMPORTANCE_HIGH
-        ).apply { description = "裝置電量低於閾值時發出警報" }
+            ALERT_CHANNEL_ID,
+            context.getString(R.string.notif_channel_alert_name),
+            NotificationManager.IMPORTANCE_HIGH
+        ).apply { description = context.getString(R.string.notif_channel_alert_desc) }
         nm.createNotificationChannel(channel)
     }
 
@@ -46,8 +49,8 @@ class AlertNotificationManager(private val context: Context) {
     private fun postAlert(deviceName: String, level: Int, threshold: Int, deviceId: String) {
         val notifId = deviceId.hashCode()
         val notification = NotificationCompat.Builder(context, ALERT_CHANNEL_ID)
-            .setContentTitle("低電量警報：$deviceName")
-            .setContentText("電量剩 $level%，低於警報閾值 $threshold%")
+            .setContentTitle(context.getString(R.string.notif_alert_title, deviceName))
+            .setContentText(context.getString(R.string.notif_alert_text, level, threshold))
             .setSmallIcon(android.R.drawable.ic_dialog_alert)
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setAutoCancel(true)

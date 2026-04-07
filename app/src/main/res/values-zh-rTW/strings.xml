@@ -1,0 +1,74 @@
+<resources>
+    <string name="app_name">裝置監控精靈</string>
+    <string name="device_admin_description">啟用後可防止 App 被解除安裝，確保背景監控持續運作。</string>
+
+    <!-- Auth -->
+    <string name="login_tagline">登入後即可監控所有裝置的即時狀態</string>
+    <string name="sign_in_google">使用 Google 帳號登入</string>
+    <string name="sign_out">登出</string>
+
+    <!-- Navigation tabs -->
+    <string name="tab_my_device">我的裝置</string>
+    <string name="tab_device_list">監控清單</string>
+
+    <!-- Battery section -->
+    <string name="section_battery">電池</string>
+    <string name="label_battery_level">電量</string>
+    <string name="label_charging">充電中</string>
+    <string name="yes">是</string>
+    <string name="no">否</string>
+
+    <!-- Network section -->
+    <string name="section_network">網路</string>
+    <string name="label_type">類型</string>
+    <string name="label_ssid">SSID</string>
+    <string name="label_carrier">電信商</string>
+
+    <!-- Master device section -->
+    <string name="section_master_device">主裝置設定</string>
+    <string name="master_device_description">主裝置負責接收所有同帳號裝置的低電量警報</string>
+    <string name="is_master_active">目前為主裝置</string>
+    <string name="set_as_master">設為主裝置</string>
+
+    <!-- Monitor service section -->
+    <string name="section_monitor_service">背景監控服務</string>
+    <string name="service_status_running">狀態：運行中</string>
+    <string name="service_status_stopped">狀態：已停止</string>
+    <string name="service_button_running">監控服務運行中</string>
+    <string name="service_button_start">啟動監控服務</string>
+
+    <!-- Device admin section -->
+    <string name="section_device_admin">裝置管理員</string>
+    <string name="admin_status_active">狀態：已啟用（App 受保護）</string>
+    <string name="admin_status_inactive">狀態：未啟用</string>
+    <string name="admin_button_enable">啟用裝置管理員</string>
+    <string name="admin_button_disable">停用裝置管理員</string>
+    <string name="admin_enable_explanation">啟用後可防止 App 被解除安裝，確保監控服務持續運作。</string>
+
+    <!-- About section -->
+    <string name="section_about">關於</string>
+    <string name="label_version">版本</string>
+    <string name="label_developer">開發者</string>
+    <string name="github_username">bluehomewu</string>
+    <string name="github_url">https://github.com/bluehomewu</string>
+
+    <!-- Device list screen -->
+    <string name="device_list_title">監控清單（%d 台）</string>
+    <string name="no_devices_hint">尚無裝置資料\n請稍候 Realtime 同步…</string>
+    <string name="this_device">（本機）</string>
+    <string name="master_device_badge">★ 主裝置</string>
+    <string name="status_online">上線</string>
+    <string name="status_offline">離線</string>
+    <string name="label_alert_threshold">警報閾值</string>
+
+    <!-- Notifications -->
+    <string name="notif_channel_monitor_name">裝置監控</string>
+    <string name="notif_channel_monitor_desc">顯示裝置即時狀態</string>
+    <string name="notif_channel_alert_name">電量警報</string>
+    <string name="notif_channel_alert_desc">裝置電量低於閾值時發出警報</string>
+    <string name="notif_title">裝置監控精靈</string>
+    <string name="notif_initializing">初始化中…</string>
+    <string name="notif_monitor_text">電量 %1$d%%%2$s | %3$s</string>
+    <string name="notif_alert_title">低電量警報：%s</string>
+    <string name="notif_alert_text">電量剩 %1$d%%，低於警報閾值 %2$d%%</string>
+</resources>

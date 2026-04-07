@@ -32,10 +32,12 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import tw.bluehomewu.devicemonitor.R
 import tw.bluehomewu.devicemonitor.data.remote.DeviceRecord
 
 @Composable
@@ -47,7 +49,7 @@ fun DeviceListScreen(
 
     Column(modifier = modifier.fillMaxSize()) {
         Text(
-            text = "監控清單（${devices.size} 台）",
+            text = stringResource(R.string.device_list_title, devices.size),
             style = MaterialTheme.typography.titleLarge,
             modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)
         )
@@ -58,7 +60,7 @@ fun DeviceListScreen(
                 contentAlignment = Alignment.Center
             ) {
                 Text(
-                    text = "尚無裝置資料\n請稍候 Realtime 同步…",
+                    text = stringResource(R.string.no_devices_hint),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -86,7 +88,6 @@ private fun DeviceCard(
     isCurrentDevice: Boolean,
     onThresholdChange: (Int) -> Unit
 ) {
-    // Local slider state initialised from Room value; syncs to Supabase on finger-lift
     var sliderValue by remember(device.alertThreshold) {
         mutableFloatStateOf(device.alertThreshold.toFloat())
     }
@@ -115,7 +116,6 @@ private fun DeviceCard(
                 Spacer(modifier = Modifier.width(12.dp))
 
                 Column(modifier = Modifier.weight(1f)) {
-                    // 裝置名稱 + 本機標記 + 主裝置標記
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Text(
                             text = device.deviceName,
@@ -125,7 +125,7 @@ private fun DeviceCard(
                         if (isCurrentDevice) {
                             Spacer(modifier = Modifier.width(6.dp))
                             Text(
-                                text = "（本機）",
+                                text = stringResource(R.string.this_device),
                                 style = MaterialTheme.typography.labelSmall,
                                 color = MaterialTheme.colorScheme.primary
                             )
@@ -133,14 +133,13 @@ private fun DeviceCard(
                         if (device.isMaster) {
                             Spacer(modifier = Modifier.width(6.dp))
                             Text(
-                                text = "★ 主裝置",
+                                text = stringResource(R.string.master_device_badge),
                                 style = MaterialTheme.typography.labelSmall,
                                 color = MaterialTheme.colorScheme.tertiary
                             )
                         }
                     }
 
-                    // 電量 + 網路
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -175,7 +174,8 @@ private fun DeviceCard(
                 // 線上狀態指示燈
                 Icon(
                     imageVector = Icons.Default.Circle,
-                    contentDescription = if (device.isOnline) "上線" else "離線",
+                    contentDescription = if (device.isOnline) stringResource(R.string.status_online)
+                                        else stringResource(R.string.status_offline),
                     modifier = Modifier.size(12.dp),
                     tint = if (device.isOnline) Color(0xFF4CAF50) else Color(0xFF9E9E9E)
                 )
@@ -189,7 +189,7 @@ private fun DeviceCard(
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
                 Text(
-                    text = "警報閾值",
+                    text = stringResource(R.string.label_alert_threshold),
                     style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -204,7 +204,7 @@ private fun DeviceCard(
                 onValueChange = { sliderValue = it },
                 onValueChangeFinished = { onThresholdChange(sliderValue.toInt()) },
                 valueRange = 10f..100f,
-                steps = 8,  // 10 discrete values (10,20,...,100) → 8 intermediate steps
+                steps = 8,
                 modifier = Modifier.fillMaxWidth()
             )
         }

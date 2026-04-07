@@ -3,6 +3,8 @@ package tw.bluehomewu.devicemonitor.ui
 import android.app.Application
 import android.app.admin.DevicePolicyManager
 import android.content.ComponentName
+import android.content.Context
+import android.content.Intent
 import android.os.Build
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
@@ -59,14 +61,26 @@ class DeviceInfoViewModel(application: Application) : AndroidViewModel(applicati
 
     val isServiceRunning: StateFlow<Boolean> = DeviceMonitorService.isRunning
 
-    /** isMaster 從記憶體快取中找當前裝置（依 Build.MODEL 匹配）。 */
+    /**
+     * isMaster 從記憶體快取中找當前裝置（依 Build.MODEL 匹配）。
+     * 使用 Eagerly 讓 StateFlow 在 ViewModel 存活期間始終持有最新值，
+     * 避免螢幕鎖定／解鎖後 WhileSubscribed 逾時重置為 initialValue = false。
+     */
     val isMaster: StateFlow<Boolean> = deviceStateHolder.devices
         .map { devices -> devices.find { it.deviceName == Build.MODEL }?.isMaster ?: false }
         .stateIn(
             scope = viewModelScope,
-            started = SharingStarted.WhileSubscribed(5_000),
+            started = SharingStarted.Eagerly,
             initialValue = false
         )
+
+    /** 啟動前景監控服務，並將偏好寫入 SharedPreferences 以在 APK 更新後自動重啟。 */
+    fun startService() {
+        val app = getApplication<Application>()
+        app.startForegroundService(Intent(app, DeviceMonitorService::class.java))
+        app.getSharedPreferences("app_prefs", Context.MODE_PRIVATE)
+            .edit().putBoolean("service_enabled", true).apply()
+    }
 
     fun setMaster(master: Boolean) {
         viewModelScope.launch {

@@ -1,4 +1,74 @@
 <resources>
     <string name="app_name">DeviceMonitor</string>
-    <string name="device_admin_description">啟用後可防止 App 被解除安裝，確保背景監控持續運作。</string>
+    <string name="device_admin_description">Enables protection against app uninstall to keep monitoring active.</string>
+
+    <!-- Auth -->
+    <string name="login_tagline">Monitor all your devices in real time after signing in</string>
+    <string name="sign_in_google">Sign in with Google</string>
+    <string name="sign_out">Sign Out</string>
+
+    <!-- Navigation tabs -->
+    <string name="tab_my_device">My Device</string>
+    <string name="tab_device_list">Device List</string>
+
+    <!-- Battery section -->
+    <string name="section_battery">Battery</string>
+    <string name="label_battery_level">Level</string>
+    <string name="label_charging">Charging</string>
+    <string name="yes">Yes</string>
+    <string name="no">No</string>
+
+    <!-- Network section -->
+    <string name="section_network">Network</string>
+    <string name="label_type">Type</string>
+    <string name="label_ssid">SSID</string>
+    <string name="label_carrier">Carrier</string>
+
+    <!-- Master device section -->
+    <string name="section_master_device">Master Device</string>
+    <string name="master_device_description">The master device receives low-battery alerts for all devices on the same account</string>
+    <string name="is_master_active">Currently master device</string>
+    <string name="set_as_master">Set as master device</string>
+
+    <!-- Monitor service section -->
+    <string name="section_monitor_service">Background Monitor Service</string>
+    <string name="service_status_running">Status: Running</string>
+    <string name="service_status_stopped">Status: Stopped</string>
+    <string name="service_button_running">Service Running</string>
+    <string name="service_button_start">Start Monitor Service</string>
+
+    <!-- Device admin section -->
+    <string name="section_device_admin">Device Admin</string>
+    <string name="admin_status_active">Status: Active (App is protected)</string>
+    <string name="admin_status_inactive">Status: Not activated</string>
+    <string name="admin_button_enable">Enable Device Admin</string>
+    <string name="admin_button_disable">Disable Device Admin</string>
+    <string name="admin_enable_explanation">Enables protection against app uninstall to keep the monitoring service running.</string>
+
+    <!-- About section -->
+    <string name="section_about">About</string>
+    <string name="label_version">Version</string>
+    <string name="label_developer">Developer</string>
+    <string name="github_username">bluehomewu</string>
+    <string name="github_url">https://github.com/bluehomewu</string>
+
+    <!-- Device list screen -->
+    <string name="device_list_title">Device List (%d)</string>
+    <string name="no_devices_hint">No device data\nWaiting for Realtime sync…</string>
+    <string name="this_device">(This Device)</string>
+    <string name="master_device_badge">★ Master</string>
+    <string name="status_online">Online</string>
+    <string name="status_offline">Offline</string>
+    <string name="label_alert_threshold">Alert Threshold</string>
+
+    <!-- Notifications -->
+    <string name="notif_channel_monitor_name">Device Monitor</string>
+    <string name="notif_channel_monitor_desc">Shows device real-time status</string>
+    <string name="notif_channel_alert_name">Battery Alert</string>
+    <string name="notif_channel_alert_desc">Alerts when a device battery falls below the threshold</string>
+    <string name="notif_title">DeviceMonitor</string>
+    <string name="notif_initializing">Initializing…</string>
+    <string name="notif_monitor_text">Battery %1$d%%%2$s | %3$s</string>
+    <string name="notif_alert_title">Low Battery: %s</string>
+    <string name="notif_alert_text">Battery at %1$d%%, below threshold %2$d%%</string>
 </resources>

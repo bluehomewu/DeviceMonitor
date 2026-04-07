@@ -4,6 +4,7 @@ import android.app.admin.DevicePolicyManager
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -12,6 +13,8 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -32,10 +35,14 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalUriHandler
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import tw.bluehomewu.devicemonitor.BuildConfig
+import tw.bluehomewu.devicemonitor.R
 import tw.bluehomewu.devicemonitor.receiver.DeviceAdminReceiver
-import tw.bluehomewu.devicemonitor.service.DeviceMonitorService
 
 @Composable
 fun DeviceInfoScreen(
@@ -58,12 +65,13 @@ fun DeviceInfoScreen(
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
+        // ── Header ───────────────────────────────────────────────
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Text("裝置監控精靈", style = MaterialTheme.typography.headlineMedium)
+            Text(stringResource(R.string.app_name), style = MaterialTheme.typography.headlineMedium)
             Row(verticalAlignment = Alignment.CenterVertically) {
                 IconButton(onClick = onToggleTheme) {
                     Icon(
@@ -71,36 +79,37 @@ fun DeviceInfoScreen(
                         contentDescription = if (isDarkTheme) "切換淺色模式" else "切換深色模式"
                     )
                 }
-                TextButton(onClick = onSignOut) { Text("登出") }
+                TextButton(onClick = onSignOut) { Text(stringResource(R.string.sign_out)) }
             }
         }
 
-        // 電池
+        // ── 電池 ─────────────────────────────────────────────────
         InfoCard(
-            title = "電池",
+            title = stringResource(R.string.section_battery),
             items = listOf(
-                "電量" to "${info.batteryLevel}%",
-                "充電中" to if (info.isCharging) "是" else "否"
+                stringResource(R.string.label_battery_level) to "${info.batteryLevel}%",
+                stringResource(R.string.label_charging) to
+                        if (info.isCharging) stringResource(R.string.yes) else stringResource(R.string.no)
             )
         )
 
-        // 網路
+        // ── 網路 ─────────────────────────────────────────────────
         InfoCard(
-            title = "網路",
+            title = stringResource(R.string.section_network),
             items = buildList {
-                add("類型" to info.networkType)
-                info.wifiSsid?.let { add("SSID" to it) }
-                info.carrierName?.let { add("電信商" to it) }
+                add(stringResource(R.string.label_type) to info.networkType)
+                info.wifiSsid?.let { add(stringResource(R.string.label_ssid) to it) }
+                info.carrierName?.let { add(stringResource(R.string.label_carrier) to it) }
             }
         )
 
-        // 主裝置設定
+        // ── 主裝置設定 ────────────────────────────────────────────
         Card(modifier = Modifier.fillMaxWidth()) {
             Column(modifier = Modifier.padding(16.dp)) {
-                Text("主裝置設定", style = MaterialTheme.typography.titleMedium)
+                Text(stringResource(R.string.section_master_device), style = MaterialTheme.typography.titleMedium)
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
-                    text = "主裝置負責接收所有同帳號裝置的低電量警報",
+                    text = stringResource(R.string.master_device_description),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -111,7 +120,8 @@ fun DeviceInfoScreen(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = if (isMaster) "目前為主裝置" else "設為主裝置",
+                        text = if (isMaster) stringResource(R.string.is_master_active)
+                               else stringResource(R.string.set_as_master),
                         style = MaterialTheme.typography.bodyMedium
                     )
                     Switch(
@@ -122,13 +132,14 @@ fun DeviceInfoScreen(
             }
         }
 
-        // 監控服務
+        // ── 監控服務 ──────────────────────────────────────────────
         Card(modifier = Modifier.fillMaxWidth()) {
             Column(modifier = Modifier.padding(16.dp)) {
-                Text("背景監控服務", style = MaterialTheme.typography.titleMedium)
+                Text(stringResource(R.string.section_monitor_service), style = MaterialTheme.typography.titleMedium)
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
-                    text = if (isServiceRunning) "狀態：運行中" else "狀態：已停止",
+                    text = if (isServiceRunning) stringResource(R.string.service_status_running)
+                           else stringResource(R.string.service_status_stopped),
                     style = MaterialTheme.typography.bodySmall,
                     color = if (isServiceRunning)
                         MaterialTheme.colorScheme.primary
@@ -137,26 +148,26 @@ fun DeviceInfoScreen(
                 )
                 Spacer(modifier = Modifier.height(8.dp))
                 Button(
-                    onClick = {
-                        context.startForegroundService(
-                            Intent(context, DeviceMonitorService::class.java)
-                        )
-                    },
+                    onClick = { vm.startService() },
                     enabled = !isServiceRunning,
                     modifier = Modifier.fillMaxWidth()
                 ) {
-                    Text(if (isServiceRunning) "監控服務運行中" else "啟動監控服務")
+                    Text(
+                        if (isServiceRunning) stringResource(R.string.service_button_running)
+                        else stringResource(R.string.service_button_start)
+                    )
                 }
             }
         }
 
-        // 裝置管理員
+        // ── 裝置管理員 ────────────────────────────────────────────
         Card(modifier = Modifier.fillMaxWidth()) {
             Column(modifier = Modifier.padding(16.dp)) {
-                Text("裝置管理員", style = MaterialTheme.typography.titleMedium)
+                Text(stringResource(R.string.section_device_admin), style = MaterialTheme.typography.titleMedium)
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
-                    text = if (isAdminActive) "狀態：已啟用（App 受保護）" else "狀態：未啟用",
+                    text = if (isAdminActive) stringResource(R.string.admin_status_active)
+                           else stringResource(R.string.admin_status_inactive),
                     style = MaterialTheme.typography.bodySmall,
                     color = if (isAdminActive)
                         MaterialTheme.colorScheme.primary
@@ -169,7 +180,7 @@ fun DeviceInfoScreen(
                         onClick = { activateDeviceAdmin(context) },
                         modifier = Modifier.fillMaxWidth()
                     ) {
-                        Text("啟用裝置管理員")
+                        Text(stringResource(R.string.admin_button_enable))
                     }
                 } else {
                     OutlinedButton(
@@ -182,7 +193,47 @@ fun DeviceInfoScreen(
                             contentColor = MaterialTheme.colorScheme.error
                         )
                     ) {
-                        Text("停用裝置管理員")
+                        Text(stringResource(R.string.admin_button_disable))
+                    }
+                }
+            }
+        }
+
+        // ── 關於 ──────────────────────────────────────────────────
+        val uriHandler = LocalUriHandler.current
+        Card(modifier = Modifier.fillMaxWidth()) {
+            Column(modifier = Modifier.padding(16.dp)) {
+                Text(stringResource(R.string.section_about), style = MaterialTheme.typography.titleMedium)
+                Spacer(modifier = Modifier.height(8.dp))
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Text(stringResource(R.string.label_version), style = MaterialTheme.typography.bodyMedium)
+                    Text(BuildConfig.VERSION_NAME, style = MaterialTheme.typography.bodyMedium)
+                }
+                Spacer(modifier = Modifier.height(4.dp))
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { uriHandler.openUri(stringResource(R.string.github_url)) },
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(stringResource(R.string.label_developer), style = MaterialTheme.typography.bodyMedium)
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            painter = painterResource(R.drawable.ic_github),
+                            contentDescription = "GitHub",
+                            modifier = Modifier.size(16.dp),
+                            tint = MaterialTheme.colorScheme.onSurface
+                        )
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text(
+                            text = stringResource(R.string.github_username),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.primary
+                        )
                     }
                 }
             }
@@ -196,7 +247,7 @@ private fun activateDeviceAdmin(context: Context) {
         putExtra(DevicePolicyManager.EXTRA_DEVICE_ADMIN, component)
         putExtra(
             DevicePolicyManager.EXTRA_ADD_EXPLANATION,
-            "啟用後可防止 App 被解除安裝，確保監控服務持續運作。"
+            context.getString(R.string.admin_enable_explanation)
         )
     }
     context.startActivity(intent)
