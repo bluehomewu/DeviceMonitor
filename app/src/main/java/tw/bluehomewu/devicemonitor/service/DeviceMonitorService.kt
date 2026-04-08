@@ -106,7 +106,7 @@ class DeviceMonitorService : Service() {
         CoroutineScope(Dispatchers.IO).launch {
             runCatching {
                 realtimeRepository.stopListening()
-                val uid = cachedUid ?: supabase.auth.currentUserOrNull()?.id ?: return@launch
+                val uid = cachedUid ?: return@launch
                 deviceRepository.markOffline(uid)
             }
         }
@@ -115,13 +115,30 @@ class DeviceMonitorService : Service() {
     }
 
     /**
-     * 取得當前有效 UID。
-     * 優先使用 auth 的即時值並更新快取；若即時值為 null 則回退到快取。
+     * 確保 Supabase auth session 有效並回傳 UID。
+     *
+     * supabase-kt 在背景 JWT 自動刷新失敗時會清空 session，
+     * 導致後續 HTTP 請求改用 anon key，RLS 拒絕（錯誤：row violates RLS policy）。
+     * 此函式在 currentUserOrNull() 為 null 時主動呼叫 refreshCurrentSession()，
+     * 用 refresh token 重新換取 access token，確保請求帶有有效的 user JWT。
      */
-    private fun resolveUid(): String? {
+    private suspend fun ensureValidSession(): String? {
         val live = supabase.auth.currentUserOrNull()?.id
-        if (live != null) cachedUid = live
-        return live ?: cachedUid
+        if (live != null) {
+            cachedUid = live
+            return live
+        }
+        // JWT 過期或 session 被清空 → 用 refresh token 重新換取
+        return runCatching {
+            Log.d(TAG, "JWT 過期，嘗試刷新 session…")
+            supabase.auth.refreshCurrentSession()
+            supabase.auth.currentUserOrNull()?.id?.also { refreshed ->
+                cachedUid = refreshed
+                Log.i(TAG, "Session 刷新成功，uid=${refreshed.take(8)}")
+            }
+        }.onFailure {
+            Log.w(TAG, "Session 刷新失敗：${it::class.simpleName} — ${it.message}")
+        }.getOrNull()
     }
 
     private fun startMonitoring() {
@@ -189,8 +206,7 @@ class DeviceMonitorService : Service() {
         scope.launch {
             while (isActive) {
                 delay(UPLOAD_INTERVAL_MS)
-                val uid = resolveUid()
-                Log.d(TAG, "心跳 tick — wakeLockHeld=${if (::wakeLock.isInitialized) wakeLock.isHeld else false}, uid=${uid?.take(8)}")
+                Log.d(TAG, "心跳 tick — wakeLockHeld=${if (::wakeLock.isInitialized) wakeLock.isHeld else false}, cachedUid=${cachedUid?.take(8)}")
                 latestInfo?.let { syncToSupabase(it, "定時上傳") }
                     ?: Log.w(TAG, "心跳 tick — latestInfo 尚未初始化，跳過")
             }
@@ -211,9 +227,9 @@ class DeviceMonitorService : Service() {
 
     private fun syncToSupabase(info: DeviceInfo, reason: String) {
         scope.launch {
-            val uid = resolveUid()
+            val uid = ensureValidSession()
             if (uid == null) {
-                Log.w(TAG, "[$reason] uid 不可用（auth 暫時離線），跳過 upsert")
+                Log.w(TAG, "[$reason] session 無效且無法刷新，跳過 upsert")
                 return@launch
             }
             runCatching {
