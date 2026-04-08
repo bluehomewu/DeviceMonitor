@@ -54,7 +54,7 @@ object AppModule {
     }
 
     val alertNotificationManager: AlertNotificationManager by lazy {
-        AlertNotificationManager(_appContext)
+        AlertNotificationManager(_appContext, deviceStateHolder)
     }
 
     val realtimeRepository: RealtimeRepository by lazy {
