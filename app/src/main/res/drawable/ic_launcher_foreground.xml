@@ -1,30 +1,81 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Adaptive icon foreground — 108×108dp canvas, safe zone 21–87dp.
+  Visual elements (all white):
+    • Phone body with screen cutout (fillType=evenOdd)
+    • Speaker notch + home indicator bar
+    • WiFi icon in screen upper area  (concentric arcs, r=6/10/14)
+    • Heartbeat / EKG pulse line in screen lower area
+-->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:aapt="http://schemas.android.com/aapt"
     android:width="108dp"
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
-    <path android:pathData="M31,63.928c0,0 6.4,-11 12.1,-13.1c7.2,-2.6 26,-1.4 26,-1.4l38.1,38.1L107,108.928l-32,-1L31,63.928z">
-        <aapt:attr name="android:fillColor">
-            <gradient
-                android:endX="85.84757"
-                android:endY="92.4963"
-                android:startX="42.9492"
-                android:startY="49.59793"
-                android:type="linear">
-                <item
-                    android:color="#44000000"
-                    android:offset="0.0" />
-                <item
-                    android:color="#00000000"
-                    android:offset="1.0" />
-            </gradient>
-        </aapt:attr>
-    </path>
+
+    <!-- ── Phone body with screen hole ── -->
+    <!-- Outer rounded-rect (38,24)→(70,86) r=5; inner screen (40,34)→(68,74) -->
+    <!-- fillType=evenOdd punches the screen as a transparent window -->
     <path
         android:fillColor="#FFFFFF"
-        android:fillType="nonZero"
-        android:pathData="M65.3,45.828l3.8,-6.6c0.2,-0.4 0.1,-0.9 -0.3,-1.1c-0.4,-0.2 -0.9,-0.1 -1.1,0.3l-3.9,6.7c-6.3,-2.8 -13.4,-2.8 -19.7,0l-3.9,-6.7c-0.2,-0.4 -0.7,-0.5 -1.1,-0.3C38.8,38.328 38.7,38.828 38.9,39.228l3.8,6.6C36.2,49.428 31.7,56.028 31,63.928h46C76.3,56.028 71.8,49.428 65.3,45.828zM43.4,57.328c-0.8,0 -1.5,-0.5 -1.8,-1.2c-0.3,-0.7 -0.1,-1.5 0.4,-2.1c0.5,-0.5 1.4,-0.7 2.1,-0.4c0.7,0.3 1.2,1 1.2,1.8C45.3,56.528 44.5,57.328 43.4,57.328L43.4,57.328zM64.6,57.328c-0.8,0 -1.5,-0.5 -1.8,-1.2s-0.1,-1.5 0.4,-2.1c0.5,-0.5 1.4,-0.7 2.1,-0.4c0.7,0.3 1.2,1 1.2,1.8C66.5,56.528 65.6,57.328 64.6,57.328L64.6,57.328z"
-        android:strokeWidth="1"
-        android:strokeColor="#00000000" />
+        android:fillType="evenOdd"
+        android:pathData="
+            M43,24 L65,24 A5,5 0 0,1 70,29 L70,81 A5,5 0 0,1 65,86
+            L43,86 A5,5 0 0,1 38,81 L38,29 A5,5 0 0,1 43,24 Z
+            M40,34 L68,34 L68,74 L40,74 Z" />
+
+    <!-- Speaker notch (pill, top-center of phone) -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M50,27 h8 a1.5,1.5 0 0,1 1.5,1.5 a1.5,1.5 0 0,1 -1.5,1.5
+                          h-8 a1.5,1.5 0 0,1 -1.5,-1.5 a1.5,1.5 0 0,1 1.5,-1.5 z" />
+
+    <!-- Home indicator bar (pill, bottom of phone) -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M47,79.5 h14 a1.5,1.5 0 0,1 1.5,1.5 a1.5,1.5 0 0,1 -1.5,1.5
+                          h-14 a1.5,1.5 0 0,1 -1.5,-1.5 a1.5,1.5 0 0,1 1.5,-1.5 z" />
+
+    <!-- ── WiFi icon (upper half of screen, anchor-dot at 54,57) ── -->
+    <!-- Dot -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M52,57 a2,2 0 1,0 4,0 a2,2 0 1,0 -4,0 z" />
+
+    <!-- Arc 1 — inner, r=6 -->
+    <!-- endpoints at ±6·sin45°=4.24 from center: (49.76,52.76)→(58.24,52.76) -->
+    <path
+        android:fillColor="#00000000"
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="3"
+        android:strokeLineCap="round"
+        android:pathData="M49.8,52.8 A6,6 0 0,1 58.2,52.8" />
+
+    <!-- Arc 2 — middle, r=10 -->
+    <!-- endpoints at ±7.07: (46.93,49.93)→(61.07,49.93) -->
+    <path
+        android:fillColor="#00000000"
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="3"
+        android:strokeLineCap="round"
+        android:pathData="M46.9,49.9 A10,10 0 0,1 61.1,49.9" />
+
+    <!-- Arc 3 — outer, r=14 -->
+    <!-- endpoints at ±9.9: (44.1,47.1)→(63.9,47.1) -->
+    <path
+        android:fillColor="#00000000"
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="3"
+        android:strokeLineCap="round"
+        android:pathData="M44.1,47.1 A14,14 0 0,1 63.9,47.1" />
+
+    <!-- ── Heartbeat / EKG pulse line (lower half of screen, baseline y=67) ── -->
+    <path
+        android:fillColor="#00000000"
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="2.5"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:pathData="M41,67 L44,67 L46,62 L50,72 L54,67 L56,67 L58,64 L60,70 L63,67 L67,67" />
+
 </vector>

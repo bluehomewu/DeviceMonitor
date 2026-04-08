@@ -8,6 +8,7 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
@@ -52,6 +53,9 @@ private enum class MainTab { MY_DEVICE, ALL_DEVICES }
 class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        // Must be called before super.onCreate() so the splash screen
+        // window attributes are applied before the Activity window is created.
+        installSplashScreen()
         super.onCreate(savedInstanceState)
         val themePrefs = getSharedPreferences("app_prefs", MODE_PRIVATE)
         enableEdgeToEdge()

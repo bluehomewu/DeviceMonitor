@@ -1,5 +1,24 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
 
+    <!-- Base app theme (applied after splash dismisses) -->
     <style name="Theme.DeviceMonitor" parent="android:Theme.Material.Light.NoActionBar" />
+
+    <!--
+      Splash screen theme.
+      MainActivity declares this as its theme in AndroidManifest.
+      postSplashScreenTheme points back to Theme.DeviceMonitor so the
+      Activity window is re-themed correctly once the splash exits.
+    -->
+    <style name="Theme.DeviceMonitor.Splash" parent="Theme.SplashScreen">
+        <!-- Deep blue canvas -->
+        <item name="windowSplashScreenBackground">@color/splash_background</item>
+        <!-- White phone+WiFi+heartbeat icon rendered in a blue circle -->
+        <item name="windowSplashScreenAnimatedIcon">@drawable/ic_launcher_foreground</item>
+        <!-- Circle behind icon — slightly lighter blue for depth -->
+        <item name="windowSplashScreenIconBackgroundColor">@color/splash_icon_background</item>
+        <!-- Re-apply the real theme once splash is dismissed -->
+        <item name="postSplashScreenTheme">@style/Theme.DeviceMonitor</item>
+    </style>
+
 </resources>
