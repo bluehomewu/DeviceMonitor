@@ -1,6 +1,7 @@
 package tw.bluehomewu.devicemonitor.data.memory
 
 import android.content.SharedPreferences
+import android.util.Log
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -28,8 +29,17 @@ class DeviceStateHolder(private val prefs: SharedPreferences) {
         if (json != null) {
             try {
                 val cached = cacheJson.decodeFromString<List<DeviceRecord>>(json)
-                if (cached.isNotEmpty()) _devices.value = cached
-            } catch (_: Exception) { /* 快取損壞則忽略，等 Service 重新拉取 */ }
+                if (cached.isNotEmpty()) {
+                    _devices.value = cached
+                    Log.i(TAG, "快取還原成功：${cached.size} 台裝置")
+                } else {
+                    Log.d(TAG, "快取存在但為空清單")
+                }
+            } catch (e: Exception) {
+                Log.w(TAG, "快取損壞，忽略：${e.message}")
+            }
+        } else {
+            Log.d(TAG, "無快取（首次啟動或已登出）")
         }
     }
 
@@ -64,6 +74,7 @@ class DeviceStateHolder(private val prefs: SharedPreferences) {
     }
 
     companion object {
+        private const val TAG = "DeviceStateHolder"
         private const val PREF_KEY = "cached_devices"
         private val cacheJson = Json { ignoreUnknownKeys = true }
     }

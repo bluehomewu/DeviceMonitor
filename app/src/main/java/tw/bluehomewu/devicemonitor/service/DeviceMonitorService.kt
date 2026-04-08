@@ -75,6 +75,7 @@ class DeviceMonitorService : Service() {
         val pm = getSystemService(Context.POWER_SERVICE) as PowerManager
         wakeLock = pm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "DeviceMonitor::ServiceWakeLock")
         wakeLock.acquire()
+        Log.i(TAG, "WakeLock acquired=${wakeLock.isHeld}")
 
         val tm = getSystemService(Context.TELEPHONY_SERVICE) as TelephonyManager
         simOperator = tm.simOperatorName.takeIf { it.isNotBlank() }
@@ -90,6 +91,7 @@ class DeviceMonitorService : Service() {
 
     override fun onDestroy() {
         _isRunning.value = false
+        Log.i(TAG, "onDestroy — WakeLock held=${if (::wakeLock.isInitialized) wakeLock.isHeld else false}")
         if (::wakeLock.isInitialized && wakeLock.isHeld) wakeLock.release()
         CoroutineScope(Dispatchers.IO).launch {
             runCatching {
@@ -154,15 +156,17 @@ class DeviceMonitorService : Service() {
             }
         }
 
-        // 每 3 秒定時上傳本機資訊
+        // 定時心跳上傳本機資訊（UPLOAD_INTERVAL_MS）
         scope.launch {
             while (isActive) {
                 delay(UPLOAD_INTERVAL_MS)
-                latestInfo?.let { syncToSupabase(it, "定時上傳") }  // simOperator via field
+                Log.d(TAG, "心跳 tick — wakeLockHeld=${if (::wakeLock.isInitialized) wakeLock.isHeld else false}, uid=${supabase.auth.currentUserOrNull()?.id?.take(8)}")
+                latestInfo?.let { syncToSupabase(it, "定時上傳") }
+                    ?: Log.w(TAG, "心跳 tick — latestInfo 尚未初始化，跳過")
             }
         }
 
-        // 每 10 秒刷新裝置清單（Realtime 失效時的備援輪詢）
+        // 備援輪詢刷新裝置清單（Realtime 失效時）
         scope.launch {
             while (isActive) {
                 delay(REFRESH_INTERVAL_MS)
@@ -185,7 +189,9 @@ class DeviceMonitorService : Service() {
             runCatching {
                 deviceRepository.upsertDevice(uid, info, simOperator)
                 Log.d(TAG, "[$reason] upsert 成功：電量=${info.batteryLevel}% 網路=${info.networkType}")
-            }.onFailure { Log.e(TAG, "[$reason] upsert 失敗", it) }
+            }.onFailure { e ->
+                Log.e(TAG, "[$reason] upsert 失敗：${e::class.simpleName} — ${e.message}")
+            }
             updateNotification(info)
         }
     }
