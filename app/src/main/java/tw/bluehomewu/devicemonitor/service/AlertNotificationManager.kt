@@ -34,15 +34,22 @@ class AlertNotificationManager(private val context: Context) {
         val threshold = record.alertThreshold
         val deviceId = record.id
 
+        Log.d(TAG, "checkAndNotify: ${record.deviceName} level=$level% threshold=$threshold%")
+
         if (level < threshold) {
             val lastLevel = lastNotifiedLevel[deviceId]
             if (lastLevel != level) {
+                Log.i(TAG, "觸發低電量通知：${record.deviceName} $level% < $threshold%（前次=$lastLevel）")
                 lastNotifiedLevel[deviceId] = level
                 postAlert(record.deviceName, level, threshold, deviceId)
+            } else {
+                Log.d(TAG, "電量未變（$level%），略過重複通知：${record.deviceName}")
             }
         } else {
             // Battery recovered — reset so next drop can trigger again
-            lastNotifiedLevel.remove(deviceId)
+            if (lastNotifiedLevel.remove(deviceId) != null) {
+                Log.d(TAG, "${record.deviceName} 電量已回復（$level% >= $threshold%），重設通知狀態")
+            }
         }
     }
 

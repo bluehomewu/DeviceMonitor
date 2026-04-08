@@ -245,6 +245,9 @@ class DeviceMonitorService : Service() {
                 val records = deviceRepository.fetchAll()
                 deviceStateHolder.setAll(records)
                 Log.d(TAG, "初始載入 ${records.size} 台裝置")
+                // 初始載入後立即對所有裝置做一次警報檢查，
+                // 確保主裝置啟動時已低於閾值的裝置能立即發出通知。
+                records.forEach { alertNotificationManager.checkAndNotify(it) }
             }.onFailure { Log.e(TAG, "初始載入失敗", it) }
 
             runCatching {
@@ -313,6 +316,8 @@ class DeviceMonitorService : Service() {
                     val records = deviceRepository.fetchAll()
                     deviceStateHolder.setAll(records)
                     Log.d(TAG, "定時刷新 ${records.size} 台裝置")
+                    // 備援輪詢也做警報檢查：Realtime 斷線時仍能發通知
+                    records.forEach { alertNotificationManager.checkAndNotify(it) }
                 }.onFailure { Log.e(TAG, "定時刷新失敗", it) }
             }
         }
