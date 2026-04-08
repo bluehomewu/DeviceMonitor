@@ -105,7 +105,7 @@ class AuthViewModel(
                 val supabase = AppModule.supabase
                 AuthViewModel(
                     supabase = supabase,
-                    googleAuthManager = GoogleAuthManager(application, supabase)
+                    googleAuthManager = AppModule.googleAuthManager
                 )
             }
         }

@@ -2,6 +2,7 @@ package tw.bluehomewu.devicemonitor.di
 
 import android.content.Context
 import io.github.jan.supabase.SupabaseClient
+import tw.bluehomewu.devicemonitor.auth.GoogleAuthManager
 import io.github.jan.supabase.auth.Auth
 import io.github.jan.supabase.createSupabaseClient
 import io.github.jan.supabase.postgrest.Postgrest
@@ -37,6 +38,10 @@ object AppModule {
     }
 
     val deviceRepository: DeviceRepository by lazy { DeviceRepository(supabase) }
+
+    val googleAuthManager: GoogleAuthManager by lazy {
+        GoogleAuthManager(_appContext, supabase)
+    }
 
     val alertNotificationManager: AlertNotificationManager by lazy {
         AlertNotificationManager(_appContext)

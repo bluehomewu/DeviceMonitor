@@ -1,6 +1,6 @@
 package tw.bluehomewu.devicemonitor.auth
 
-import android.app.Activity
+import android.app.Activity  // still needed for signIn()
 import android.content.Context
 import androidx.credentials.CredentialManager
 import androidx.credentials.GetCredentialRequest
@@ -48,10 +48,15 @@ class GoogleAuthManager(
 
     /**
      * 靜默重新登入：使用已授權帳號自動取得憑證，不顯示帳號選擇對話框。
-     * 用於 APK 更新後 Supabase in-memory session 遺失時自動還原登入狀態。
+     * 用於 APK 更新後 Supabase session 遺失，或背景 JWT 刷新失敗後自動還原。
+     *
+     * 接受任何 Context（Activity 或 Service/Application）：
+     * filterByAuthorizedAccounts=true + autoSelectEnabled=true 時 Credential Manager
+     * 不會顯示 UI，因此不需要 Activity context。
+     *
      * 若無已授權帳號（首次安裝）則拋出例外，由呼叫端決定是否顯示登入頁。
      */
-    suspend fun silentSignIn(activity: Activity): Result<Unit> = runCatching {
+    suspend fun silentSignIn(context: Context): Result<Unit> = runCatching {
         val googleIdOption = GetGoogleIdOption.Builder()
             .setFilterByAuthorizedAccounts(true)
             .setServerClientId(BuildConfig.GOOGLE_WEB_CLIENT_ID)
@@ -62,7 +67,7 @@ class GoogleAuthManager(
             .addCredentialOption(googleIdOption)
             .build()
 
-        val result = credentialManager.getCredential(activity, request)
+        val result = credentialManager.getCredential(context, request)
         val googleCredential = GoogleIdTokenCredential.createFrom(result.credential.data)
 
         supabase.auth.signInWith(IDToken) {

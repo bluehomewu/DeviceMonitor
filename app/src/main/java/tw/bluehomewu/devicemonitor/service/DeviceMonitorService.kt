@@ -115,29 +115,45 @@ class DeviceMonitorService : Service() {
     }
 
     /**
-     * 確保 Supabase auth session 有效並回傳 UID。
+     * 三層 fallback 確保 Supabase auth session 有效並回傳 UID：
      *
-     * supabase-kt 在背景 JWT 自動刷新失敗時會清空 session，
-     * 導致後續 HTTP 請求改用 anon key，RLS 拒絕（錯誤：row violates RLS policy）。
-     * 此函式在 currentUserOrNull() 為 null 時主動呼叫 refreshCurrentSession()，
-     * 用 refresh token 重新換取 access token，確保請求帶有有效的 user JWT。
+     * 1. currentUserOrNull() 非 null → 直接使用（正常路徑）
+     * 2. null → refreshCurrentSession()：用 refresh token 換新 JWT
+     * 3. refresh token 也消失（supabase-kt 背景刷新失敗後將整個 session 清空）
+     *    → silentSignIn(applicationContext)：靜默 Google 重新登入，
+     *      不顯示 UI（filterByAuthorizedAccounts=true + autoSelectEnabled=true）
      */
     private suspend fun ensureValidSession(): String? {
+        // 層 1：live session
         val live = supabase.auth.currentUserOrNull()?.id
         if (live != null) {
             cachedUid = live
             return live
         }
-        // JWT 過期或 session 被清空 → 用 refresh token 重新換取
-        return runCatching {
-            Log.d(TAG, "JWT 過期，嘗試刷新 session…")
+
+        // 層 2：refresh token 換新 JWT
+        val refreshed = runCatching {
+            Log.d(TAG, "JWT 過期，嘗試 refresh session…")
             supabase.auth.refreshCurrentSession()
-            supabase.auth.currentUserOrNull()?.id?.also { refreshed ->
-                cachedUid = refreshed
-                Log.i(TAG, "Session 刷新成功，uid=${refreshed.take(8)}")
+            supabase.auth.currentUserOrNull()?.id?.also { cachedUid = it }
+        }.onFailure {
+            Log.w(TAG, "Refresh 失敗：${it::class.simpleName} — ${it.message}")
+        }.getOrNull()
+        if (refreshed != null) {
+            Log.i(TAG, "Refresh 成功，uid=${refreshed.take(8)}")
+            return refreshed
+        }
+
+        // 層 3：refresh token 消失 → 靜默重新 Google 登入
+        return runCatching {
+            Log.d(TAG, "Refresh token 消失，嘗試靜默重新登入…")
+            AppModule.googleAuthManager.silentSignIn(applicationContext)
+            supabase.auth.currentUserOrNull()?.id?.also { uid ->
+                cachedUid = uid
+                Log.i(TAG, "靜默重登成功，uid=${uid.take(8)}")
             }
         }.onFailure {
-            Log.w(TAG, "Session 刷新失敗：${it::class.simpleName} — ${it.message}")
+            Log.w(TAG, "靜默重登失敗：${it::class.simpleName} — ${it.message}")
         }.getOrNull()
     }
 
