@@ -3,6 +3,7 @@ package tw.bluehomewu.devicemonitor.di
 import android.content.Context
 import io.github.jan.supabase.SupabaseClient
 import tw.bluehomewu.devicemonitor.auth.GoogleAuthManager
+import tw.bluehomewu.devicemonitor.auth.SessionBackupManager
 import io.github.jan.supabase.auth.Auth
 import io.github.jan.supabase.createSupabaseClient
 import io.github.jan.supabase.postgrest.Postgrest
@@ -24,7 +25,12 @@ object AppModule {
             supabaseUrl = BuildConfig.SUPABASE_URL,
             supabaseKey = BuildConfig.SUPABASE_ANON_KEY
         ) {
-            install(Auth)
+            install(Auth) {
+                // 明確啟用 session 持久化與自動刷新，
+                // 避免背景刷新失敗後 refresh token 被清空
+                autoSaveToStorage = true
+                alwaysAutoRefresh = true
+            }
             install(Postgrest)
             install(Realtime)
         }
@@ -41,6 +47,10 @@ object AppModule {
 
     val googleAuthManager: GoogleAuthManager by lazy {
         GoogleAuthManager(_appContext, supabase)
+    }
+
+    val sessionBackupManager: SessionBackupManager by lazy {
+        SessionBackupManager(supabase, _appContext.getSharedPreferences("app_prefs", Context.MODE_PRIVATE))
     }
 
     val alertNotificationManager: AlertNotificationManager by lazy {

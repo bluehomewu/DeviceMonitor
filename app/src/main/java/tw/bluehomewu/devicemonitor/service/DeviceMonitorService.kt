@@ -23,6 +23,9 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.withTimeoutOrNull
 import tw.bluehomewu.devicemonitor.R
 import tw.bluehomewu.devicemonitor.data.collector.BatteryCollector
 import tw.bluehomewu.devicemonitor.data.collector.NetworkCollector
@@ -37,6 +40,7 @@ class DeviceMonitorService : Service() {
     private val realtimeRepository by lazy { AppModule.realtimeRepository }
     private val deviceStateHolder by lazy { AppModule.deviceStateHolder }
     private val alertNotificationManager by lazy { AppModule.alertNotificationManager }
+    private val sessionBackupManager by lazy { AppModule.sessionBackupManager }
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private val batteryCollector by lazy { BatteryCollector(this) }
@@ -58,6 +62,18 @@ class DeviceMonitorService : Service() {
     @Volatile private var cachedUid: String? = null
 
     /**
+     * 防止多個 coroutine 同時觸發靜默重登（Layer 3）。
+     * tryLock() 失敗時直接跳過，由成功拿到鎖的 coroutine 執行。
+     */
+    private val reAuthMutex = Mutex()
+
+    /**
+     * 靜默重登冷卻截止時間（毫秒）。
+     * 每次嘗試後（不論成功與否）設定 5 分鐘冷卻，避免頻繁向 Credential Manager 請求。
+     */
+    @Volatile private var reAuthCooldownUntilMs = 0L
+
+    /**
      * PARTIAL_WAKE_LOCK：讓 CPU 在螢幕關閉後仍持續運作。
      * 若無此 Lock，CPU 會進入休眠，Dispatchers.IO 的 coroutine 全部暫停，
      * 導致定時上傳停止、Realtime 連線中斷。
@@ -73,6 +89,10 @@ class DeviceMonitorService : Service() {
         private const val REFRESH_INTERVAL_MS = 30_000L  // 裝置清單刷新間隔（Realtime 備援）
         private const val AUTH_RETRY_INTERVAL_MS = 3_000L
         private const val AUTH_RETRY_COUNT = 15            // 最多等 45 秒
+        private const val SILENT_REAUTH_TIMEOUT_MS        = 8_000L    // 靜默重登逾時 8 秒
+        private const val SILENT_REAUTH_COOLDOWN_HUNG_MS  = 300_000L  // 逾時後冷卻 5 分鐘（Credential Manager 卡住）
+        private const val SILENT_REAUTH_COOLDOWN_FAIL_MS  = 60_000L   // 乾淨失敗後冷卻 1 分鐘（暫時性網路錯誤）
+        private const val SESSION_WATCHDOG_INTERVAL_MS    = 5_000L    // Session 看門狗檢查間隔
 
         private val _isRunning = MutableStateFlow(false)
         val isRunning: StateFlow<Boolean> = _isRunning.asStateFlow()
@@ -144,20 +164,65 @@ class DeviceMonitorService : Service() {
             return refreshed
         }
 
-        // 層 3：refresh token 消失 → 靜默重新 Google 登入
-        return runCatching {
+        // 層 2.5：supabase-kt 已清空 session → 從我們自己的備份還原
+        // 這能處理「No refresh token found」的根本原因：refresh token 被清空時，
+        // 用獨立備份的 UserSession 重建 session 再呼叫 refresh
+        val restored = sessionBackupManager.tryRestoreSession()
+        if (restored != null) {
+            cachedUid = restored
+            return restored
+        }
+
+        // 層 3：refresh token 消失 → 靜默重新 Google 登入（含 Mutex + timeout + 冷卻）
+        val now = System.currentTimeMillis()
+        if (now < reAuthCooldownUntilMs) {
+            Log.d(TAG, "靜默重登冷卻中（剩 ${(reAuthCooldownUntilMs - now) / 1000}s），跳過")
+            return null
+        }
+        if (!reAuthMutex.tryLock()) {
+            Log.d(TAG, "靜默重登進行中，跳過重複觸發")
+            return null
+        }
+        return try {
             Log.d(TAG, "Refresh token 消失，嘗試靜默重新登入…")
-            AppModule.googleAuthManager.silentSignIn(applicationContext)
-            supabase.auth.currentUserOrNull()?.id?.also { uid ->
-                cachedUid = uid
-                Log.i(TAG, "靜默重登成功，uid=${uid.take(8)}")
+            val result = withTimeoutOrNull(SILENT_REAUTH_TIMEOUT_MS) {
+                AppModule.googleAuthManager.silentSignIn(applicationContext)
             }
-        }.onFailure {
-            Log.w(TAG, "靜默重登失敗：${it::class.simpleName} — ${it.message}")
-        }.getOrNull()
+            when {
+                result == null -> {
+                    // withTimeoutOrNull 逾時：Credential Manager 卡住，設長冷卻
+                    reAuthCooldownUntilMs = System.currentTimeMillis() + SILENT_REAUTH_COOLDOWN_HUNG_MS
+                    Log.w(TAG, "靜默重登逾時（${SILENT_REAUTH_TIMEOUT_MS / 1000}s），冷卻 ${SILENT_REAUTH_COOLDOWN_HUNG_MS / 60_000}min")
+                    null
+                }
+                result.isFailure -> {
+                    // 乾淨失敗（無授權帳號、暫時網路錯誤等），設短冷卻
+                    reAuthCooldownUntilMs = System.currentTimeMillis() + SILENT_REAUTH_COOLDOWN_FAIL_MS
+                    Log.w(TAG, "靜默重登失敗（冷卻 ${SILENT_REAUTH_COOLDOWN_FAIL_MS / 1000}s）：${result.exceptionOrNull()?.let { "${it::class.simpleName} — ${it.message}" }}")
+                    null
+                }
+                else -> {
+                    // 成功：不設冷卻，允許下次立即重登
+                    reAuthCooldownUntilMs = 0L
+                    supabase.auth.currentUserOrNull()?.id?.also { uid ->
+                        cachedUid = uid
+                        Log.i(TAG, "靜默重登成功，uid=${uid.take(8)}")
+                    }
+                }
+            }
+        } catch (e: Exception) {
+            reAuthCooldownUntilMs = System.currentTimeMillis() + SILENT_REAUTH_COOLDOWN_FAIL_MS
+            Log.w(TAG, "靜默重登例外（冷卻 ${SILENT_REAUTH_COOLDOWN_FAIL_MS / 1000}s）：${e::class.simpleName} — ${e.message}")
+            null
+        } finally {
+            reAuthMutex.unlock()
+        }
     }
 
     private fun startMonitoring() {
+        // 立即啟動 session 備份監聽，確保首次取得有效 session 後就開始備份
+        sessionBackupManager.startWatching(scope)
+
         // 初始載入 + Realtime 訂閱：等待 auth 就緒後才執行（最多 45 秒）
         scope.launch {
             var uid: String? = null
@@ -225,6 +290,18 @@ class DeviceMonitorService : Service() {
                 Log.d(TAG, "心跳 tick — wakeLockHeld=${if (::wakeLock.isInitialized) wakeLock.isHeld else false}, cachedUid=${cachedUid?.take(8)}")
                 latestInfo?.let { syncToSupabase(it, "定時上傳") }
                     ?: Log.w(TAG, "心跳 tick — latestInfo 尚未初始化，跳過")
+            }
+        }
+
+        // Session 看門狗：每 5 秒檢查 session，消失時立即嘗試恢復
+        // 補救 supabase-kt 背景 JWT 刷新失敗後清空 session 的問題
+        scope.launch {
+            while (isActive) {
+                delay(SESSION_WATCHDOG_INTERVAL_MS)
+                if (cachedUid != null && supabase.auth.currentUserOrNull() == null) {
+                    Log.w(TAG, "看門狗：session 消失，立即嘗試恢復…")
+                    ensureValidSession()
+                }
             }
         }
 

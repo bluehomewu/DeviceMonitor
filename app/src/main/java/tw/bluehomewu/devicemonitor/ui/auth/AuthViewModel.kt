@@ -82,6 +82,7 @@ class AuthViewModel(
         viewModelScope.launch {
             runCatching { googleAuthManager.signOut() }
             AppModule.deviceStateHolder.clear()
+            AppModule.sessionBackupManager.clearBackup()
             _state.value = AuthState.LoggedOut
         }
     }
