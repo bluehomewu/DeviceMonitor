@@ -27,6 +27,14 @@ data class NetworkInfo(
 
 class NetworkCollector(private val context: Context) {
 
+    /**
+     * 最後一次成功取得的 WiFi SSID。
+     * Android 10+ 在螢幕關閉後 WifiManager.getConnectionInfo().ssid 回傳 UNKNOWN_SSID，
+     * 此快取讓上傳時仍能帶出正確 SSID，避免 DB 欄位被 null 覆蓋。
+     * onLost 時清除，確保換連 WiFi 後不會殘留舊 SSID。
+     */
+    @Volatile private var lastKnownSsid: String? = null
+
     fun observe(): Flow<NetworkInfo> = callbackFlow {
         val cm = context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
         val wm = context.getSystemService(Context.WIFI_SERVICE) as WifiManager
@@ -48,9 +56,13 @@ class NetworkCollector(private val context: Context) {
                     val ssid = if (hasPermission(Manifest.permission.ACCESS_FINE_LOCATION)) {
                         @Suppress("DEPRECATION")
                         val raw = wm.connectionInfo?.ssid
-                        if (raw != null && raw != WifiManager.UNKNOWN_SSID)
-                            raw.removePrefix("\"").removeSuffix("\"")
-                        else null
+                        if (raw != null && raw != WifiManager.UNKNOWN_SSID) {
+                            // 螢幕開啟且有位置權限：取得有效 SSID 並更新快取
+                            raw.removePrefix("\"").removeSuffix("\"").also { lastKnownSsid = it }
+                        } else {
+                            // 螢幕關閉或系統限制：回傳快取，避免 DB 欄位被 null 覆蓋
+                            lastKnownSsid
+                        }
                     } else null
                     NetworkInfo("Wi-Fi", ssid, null)
                 }
@@ -68,7 +80,10 @@ class NetworkCollector(private val context: Context) {
         // ConnectivityManager callback
         val networkCallback = object : ConnectivityManager.NetworkCallback() {
             override fun onAvailable(network: Network) { trySend(currentNetworkInfo()) }
-            override fun onLost(network: Network) { trySend(currentNetworkInfo()) }
+            override fun onLost(network: Network) {
+                lastKnownSsid = null  // 換連或斷線時清除快取，避免殘留舊 SSID
+                trySend(currentNetworkInfo())
+            }
             override fun onCapabilitiesChanged(network: Network, caps: NetworkCapabilities) {
                 trySend(currentNetworkInfo())
             }

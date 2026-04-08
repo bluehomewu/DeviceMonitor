@@ -43,6 +43,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.material3.LocalContentColor
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -151,11 +152,20 @@ private fun DeviceCard(
     else
         MaterialTheme.colorScheme.surfaceVariant
 
+    // 對應 container 的正確 content color，確保 LocalContentColor 在卡片內正確傳遞
+    val contentColor = if (isCurrentDevice)
+        MaterialTheme.colorScheme.onPrimaryContainer
+    else
+        MaterialTheme.colorScheme.onSurfaceVariant
+
     Card(
         modifier = Modifier
             .fillMaxWidth()
             .clickable { expanded = !expanded },
-        colors = CardDefaults.cardColors(containerColor = containerColor)
+        colors = CardDefaults.cardColors(
+            containerColor = containerColor,
+            contentColor = contentColor
+        )
     ) {
         Column(modifier = Modifier.padding(12.dp)) {
             // ── 裝置主要資訊列 ──────────────────────────────────────
@@ -164,10 +174,7 @@ private fun DeviceCard(
                     imageVector = Icons.Default.PhoneAndroid,
                     contentDescription = null,
                     modifier = Modifier.size(36.dp),
-                    tint = if (isCurrentDevice)
-                        MaterialTheme.colorScheme.primary
-                    else
-                        MaterialTheme.colorScheme.onSurfaceVariant
+                    tint = LocalContentColor.current
                 )
                 Spacer(modifier = Modifier.width(12.dp))
 
@@ -216,7 +223,7 @@ private fun DeviceCard(
                         Text(
                             text = "·",
                             style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                            color = LocalContentColor.current.copy(alpha = 0.5f)
                         )
                         Text(
                             text = buildNetworkLabel(device),
@@ -247,7 +254,7 @@ private fun DeviceCard(
                     imageVector = if (expanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
                     contentDescription = null,
                     modifier = Modifier.size(20.dp),
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                    tint = LocalContentColor.current.copy(alpha = 0.7f)
                 )
             }
 
@@ -277,7 +284,7 @@ private fun DeviceCard(
                 Text(
                     text = stringResource(R.string.label_alert_threshold),
                     style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    color = LocalContentColor.current.copy(alpha = 0.7f)
                 )
                 Text(
                     text = "${sliderValue.toInt()}%",
@@ -309,7 +316,8 @@ private fun DetailRow(label: String, value: String?) {
         Text(
             text = label,
             style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
+            // 繼承 Card 的 LocalContentColor，保證在任何 dynamic theme 下與背景有足夠對比
+            color = LocalContentColor.current.copy(alpha = 0.7f)
         )
         Text(
             text = value,
