@@ -11,6 +11,11 @@ val localProps = Properties().apply {
     if (f.exists()) load(f.inputStream())
 }
 
+val keystoreProps = Properties().apply {
+    val f = rootProject.file("keystore.properties")
+    if (f.exists()) load(f.inputStream())
+}
+
 android {
     namespace = "tw.bluehomewu.devicemonitor"
     compileSdk = 36
@@ -19,8 +24,8 @@ android {
         applicationId = "tw.bluehomewu.devicemonitor"
         minSdk = 30
         targetSdk = 36
-        versionCode = 10
-        versionName = "1.6.0"
+        versionCode = 11
+        versionName = "1.6.1"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
@@ -29,9 +34,19 @@ android {
         buildConfigField("String", "GOOGLE_WEB_CLIENT_ID", "\"${localProps["GOOGLE_WEB_CLIENT_ID"] ?: ""}\"")
     }
 
+    signingConfigs {
+        create("release") {
+            storeFile = rootProject.file(keystoreProps["storeFile"] as? String ?: "keystore")
+            storePassword = keystoreProps["storePassword"] as? String ?: ""
+            keyAlias = keystoreProps["keyAlias"] as? String ?: ""
+            keyPassword = keystoreProps["keyPassword"] as? String ?: ""
+        }
+    }
+
     buildTypes {
         release {
             isMinifyEnabled = false
+            signingConfig = signingConfigs.getByName("release")
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"

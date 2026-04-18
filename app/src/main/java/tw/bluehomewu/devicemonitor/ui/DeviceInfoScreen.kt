@@ -53,7 +53,15 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.material3.Surface
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontStyle
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import tw.bluehomewu.devicemonitor.BuildConfig
@@ -449,16 +457,21 @@ private fun ReleaseDialog(
                 }
                 HorizontalDivider()
                 Spacer(modifier = Modifier.height(8.dp))
-                // Release notes（可捲動）
+                // Release notes（可捲動，支援 Markdown 預覽）
                 Box(modifier = Modifier.heightIn(max = 320.dp)) {
-                    val scrollState = rememberScrollState()
-                    Text(
-                        text = release.body.ifBlank { stringResource(R.string.changelog_empty) },
-                        style = MaterialTheme.typography.bodySmall.copy(
-                            fontFamily = FontFamily.Monospace
-                        ),
-                        modifier = Modifier.verticalScroll(scrollState)
-                    )
+                    if (release.body.isBlank()) {
+                        Text(
+                            text = stringResource(R.string.changelog_empty),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    } else {
+                        val scrollState = rememberScrollState()
+                        MarkdownText(
+                            text = release.body,
+                            modifier = Modifier.verticalScroll(scrollState)
+                        )
+                    }
                 }
             }
         },
@@ -497,6 +510,121 @@ private fun ReleaseDialog(
         }
     )
 }
+
+// ── Markdown Renderer ────────────────────────────────────────────────────────
+
+private sealed class MdNode {
+    data class Heading(val level: Int, val text: String) : MdNode()
+    data class Bullet(val indent: Int, val text: String) : MdNode()
+    data class Code(val body: String) : MdNode()
+    data class Para(val text: String) : MdNode()
+    object Gap : MdNode()
+    object Rule : MdNode()
+}
+
+private fun parseMd(raw: String): List<MdNode> {
+    val nodes = mutableListOf<MdNode>()
+    var inCode = false
+    val codeLines = mutableListOf<String>()
+    for (line in raw.lines()) {
+        val t = line.trimStart()
+        val indent = line.length - t.length
+        if (t.startsWith("```")) {
+            if (!inCode) { inCode = true; codeLines.clear() }
+            else { inCode = false; nodes += MdNode.Code(codeLines.joinToString("\n")); codeLines.clear() }
+            continue
+        }
+        if (inCode) { codeLines += line; continue }
+        nodes += when {
+            t.startsWith("### ") -> MdNode.Heading(3, t.removePrefix("### "))
+            t.startsWith("## ")  -> MdNode.Heading(2, t.removePrefix("## "))
+            t.startsWith("# ")   -> MdNode.Heading(1, t.removePrefix("# "))
+            t.startsWith("- ")   -> MdNode.Bullet(indent, t.removePrefix("- "))
+            t.startsWith("* ") && !t.startsWith("**") -> MdNode.Bullet(indent, t.removePrefix("* "))
+            t == "---" || t == "***" -> MdNode.Rule
+            t.isBlank()          -> MdNode.Gap
+            else                 -> MdNode.Para(t)
+        }
+    }
+    return nodes
+}
+
+@Composable
+private fun MarkdownText(text: String, modifier: Modifier = Modifier) {
+    val nodes = remember(text) { parseMd(text) }
+    val colors = MaterialTheme.colorScheme
+    val typography = MaterialTheme.typography
+    val codeBg = colors.surfaceVariant
+
+    Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(2.dp)) {
+        nodes.forEach { node ->
+            when (node) {
+                is MdNode.Heading -> {
+                    if (node.level <= 2) Spacer(Modifier.height(4.dp))
+                    Text(
+                        text = node.text,
+                        style = when (node.level) {
+                            1    -> typography.titleMedium
+                            2    -> typography.titleSmall
+                            else -> typography.labelLarge
+                        },
+                        fontWeight = FontWeight.Bold,
+                        color = colors.onSurface
+                    )
+                }
+                is MdNode.Bullet -> Row(modifier = Modifier.padding(start = (node.indent * 4).dp)) {
+                    Text("• ", style = typography.bodySmall, color = colors.onSurface)
+                    Text(
+                        text = buildInlineStyledString(node.text, codeBg),
+                        style = typography.bodySmall,
+                        color = colors.onSurface
+                    )
+                }
+                is MdNode.Code -> Surface(
+                    color = colors.surfaceVariant,
+                    shape = MaterialTheme.shapes.small,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text(
+                        text = node.body,
+                        style = typography.bodySmall.copy(fontFamily = FontFamily.Monospace),
+                        modifier = Modifier.padding(8.dp)
+                    )
+                }
+                is MdNode.Para -> Text(
+                    text = buildInlineStyledString(node.text, codeBg),
+                    style = typography.bodySmall,
+                    color = colors.onSurface
+                )
+                MdNode.Gap  -> Spacer(Modifier.height(4.dp))
+                MdNode.Rule -> HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
+            }
+        }
+    }
+}
+
+private fun buildInlineStyledString(text: String, codeBg: Color): AnnotatedString =
+    buildAnnotatedString {
+        val re = Regex("""\*\*(.+?)\*\*|\*(.+?)\*|`(.+?)`""")
+        var last = 0
+        for (m in re.findAll(text)) {
+            append(text.substring(last, m.range.first))
+            when {
+                m.value.startsWith("**") ->
+                    withStyle(SpanStyle(fontWeight = FontWeight.Bold)) { append(m.groupValues[1]) }
+                m.value.startsWith("`") ->
+                    withStyle(SpanStyle(fontFamily = FontFamily.Monospace, background = codeBg)) {
+                        append(m.groupValues[3])
+                    }
+                else ->
+                    withStyle(SpanStyle(fontStyle = FontStyle.Italic)) { append(m.groupValues[2]) }
+            }
+            last = m.range.last + 1
+        }
+        if (last < text.length) append(text.substring(last))
+    }
+
+// ── InfoCard ──────────────────────────────────────────────────────────────────
 
 @Composable
 private fun InfoCard(title: String, items: List<Pair<String, String>>) {
