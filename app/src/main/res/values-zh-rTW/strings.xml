@@ -73,7 +73,22 @@
     <string name="label_build_number">系統版本號</string>
     <string name="label_sim_operator">SIM 電信商</string>
     <string name="label_last_updated">最後更新</string>
+    <string name="label_model">型號</string>
+    <string name="label_app_version">App 版本</string>
     <string name="status_stale">離線（逾時）</string>
+    <string name="action_cancel">取消</string>
+    <string name="action_save">儲存</string>
+    <string name="action_update">在瀏覽器中開啟</string>
+    <string name="action_install">安裝</string>
+    <string name="action_close">關閉</string>
+    <string name="action_later">略過</string>
+    <string name="update_available_title">發現新版本 — v%s</string>
+    <string name="changelog_dialog_title">更新日誌 — v%s</string>
+    <string name="changelog_empty">無發布說明。</string>
+    <string name="download_in_progress">下載中… %d%%</string>
+    <string name="download_failed">下載失敗，請再試一次。</string>
+    <string name="dialog_set_alias_title">設定別名</string>
+    <string name="dialog_alias_hint">留空則使用型號名稱</string>
 
     <!-- Notifications -->
     <string name="notif_channel_monitor_name">裝置監控</string>
