@@ -17,6 +17,7 @@ local.properties
 
 # Build outputs
 /app/release/
+/app/debug/
 
 # Signing keystore (sensitive — never commit)
 keystore
