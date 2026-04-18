@@ -1,13 +1,17 @@
 package tw.bluehomewu.devicemonitor.service
 
+import android.app.AlarmManager
 import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
+import android.app.PendingIntent
 import android.app.Service
 import android.content.Context
 import android.content.Intent
 import android.os.IBinder
 import android.os.PowerManager
+import android.os.SystemClock
+import tw.bluehomewu.devicemonitor.receiver.ServiceRestartReceiver
 import android.telephony.TelephonyManager
 import android.util.Log
 import androidx.core.app.NotificationCompat
@@ -118,6 +122,27 @@ class DeviceMonitorService : Service() {
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int = START_STICKY
 
     override fun onBind(intent: Intent?): IBinder? = null
+
+    /**
+     * 使用者從最近任務滑掉 App 時呼叫。
+     * 透過 AlarmManager 在 5 秒後發送廣播，由 ServiceRestartReceiver 重啟 Service。
+     * BroadcastReceiver.onReceive() 執行期間有短暫視窗可啟動 ForegroundService。
+     */
+    override fun onTaskRemoved(rootIntent: Intent?) {
+        Log.i(TAG, "onTaskRemoved — 排程 5 秒後重啟")
+        val restartIntent = PendingIntent.getBroadcast(
+            this, 0,
+            Intent(this, ServiceRestartReceiver::class.java),
+            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
+        )
+        (getSystemService(Context.ALARM_SERVICE) as AlarmManager)
+            .setAndAllowWhileIdle(
+                AlarmManager.ELAPSED_REALTIME_WAKEUP,
+                SystemClock.elapsedRealtime() + 5_000L,
+                restartIntent
+            )
+        super.onTaskRemoved(rootIntent)
+    }
 
     override fun onDestroy() {
         _isRunning.value = false

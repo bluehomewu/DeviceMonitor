@@ -74,6 +74,9 @@ dependencies {
     implementation(libs.supabase.realtime)
     implementation(libs.ktor.client.okhttp)
 
+    // WorkManager
+    implementation(libs.androidx.work.runtime.ktx)
+
     // Google Sign-In（Credential Manager）
     implementation(libs.credentials)
     implementation(libs.credentials.play.services)

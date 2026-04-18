@@ -17,6 +17,9 @@ ktor = "3.0.3"
 credentials = "1.3.0"
 googleid = "1.1.1"
 
+# WorkManager
+workManager = "2.9.1"
+
 junit = "4.13.2"
 junitVersion = "1.1.5"
 espressoCore = "3.5.1"
@@ -49,6 +52,9 @@ supabase-postgrest = { group = "io.github.jan-tennert.supabase", name = "postgre
 supabase-auth = { group = "io.github.jan-tennert.supabase", name = "auth-kt" }
 supabase-realtime = { group = "io.github.jan-tennert.supabase", name = "realtime-kt" }
 ktor-client-okhttp = { group = "io.ktor", name = "ktor-client-okhttp", version.ref = "ktor" }
+
+# WorkManager
+androidx-work-runtime-ktx = { group = "androidx.work", name = "work-runtime-ktx", version.ref = "workManager" }
 
 # Google Sign-In（Credential Manager）
 credentials = { group = "androidx.credentials", name = "credentials", version.ref = "credentials" }

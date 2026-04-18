@@ -19,6 +19,9 @@
     <!-- 通知（Android 13+） -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
+    <!-- 開機自啟 -->
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+
     <application
         android:allowBackup="true"
         android:dataExtractionRules="@xml/data_extraction_rules"
@@ -46,6 +49,21 @@
         <service
             android:name=".service.DeviceMonitorService"
             android:foregroundServiceType="dataSync"
+            android:exported="false" />
+
+        <!-- 開機自啟 + APK 更新後重啟 Service -->
+        <receiver
+            android:name=".receiver.BootReceiver"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+                <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
+            </intent-filter>
+        </receiver>
+
+        <!-- AlarmManager 觸發重啟 Service（onTaskRemoved 使用） -->
+        <receiver
+            android:name=".receiver.ServiceRestartReceiver"
             android:exported="false" />
 
         <!-- Device Admin Receiver：防止 App 被移除 -->

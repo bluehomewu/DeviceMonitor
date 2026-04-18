@@ -2,8 +2,13 @@ package tw.bluehomewu.devicemonitor
 
 import android.app.Application
 import android.content.Intent
+import androidx.work.ExistingPeriodicWorkPolicy
+import androidx.work.PeriodicWorkRequestBuilder
+import androidx.work.WorkManager
 import tw.bluehomewu.devicemonitor.di.AppModule
 import tw.bluehomewu.devicemonitor.service.DeviceMonitorService
+import tw.bluehomewu.devicemonitor.service.ServiceWatchdogWorker
+import java.util.concurrent.TimeUnit
 
 class DeviceMonitorApplication : Application() {
 
@@ -16,5 +21,13 @@ class DeviceMonitorApplication : Application() {
         if (prefs.getBoolean("service_enabled", false)) {
             startForegroundService(Intent(this, DeviceMonitorService::class.java))
         }
+
+        // WorkManager 看門狗：每 15 分鐘確認 Service 仍在執行，否則重啟
+        // KEEP 策略確保不會重複排程
+        WorkManager.getInstance(this).enqueueUniquePeriodicWork(
+            ServiceWatchdogWorker.WORK_NAME,
+            ExistingPeriodicWorkPolicy.KEEP,
+            PeriodicWorkRequestBuilder<ServiceWatchdogWorker>(15, TimeUnit.MINUTES).build()
+        )
     }
 }
