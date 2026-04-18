@@ -4,10 +4,8 @@ import android.app.admin.DevicePolicyManager
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
-import android.os.Build
-import android.provider.Settings
-import android.content.Intent
 import android.net.Uri
+import android.os.Build
 import android.provider.Settings
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -15,7 +13,6 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -62,10 +59,6 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import tw.bluehomewu.devicemonitor.BuildConfig
 import tw.bluehomewu.devicemonitor.R
 import tw.bluehomewu.devicemonitor.receiver.DeviceAdminReceiver
-import tw.bluehomewu.devicemonitor.update.UpdateChecker
-import tw.bluehomewu.devicemonitor.ui.DownloadState
-import tw.bluehomewu.devicemonitor.ui.InstallEvent
-import tw.bluehomewu.devicemonitor.ui.ReleaseDialogState
 
 @Composable
 fun DeviceInfoScreen(
