@@ -74,6 +74,7 @@
     <string name="label_sim_operator">SIM Operator</string>
     <string name="label_last_updated">Last Updated</string>
     <string name="label_model">Model</string>
+    <string name="label_app_version">App Version</string>
     <string name="status_stale">Offline (Timed Out)</string>
     <string name="action_cancel">Cancel</string>
     <string name="action_save">Save</string>

@@ -299,6 +299,7 @@ private fun DeviceCard(
             AnimatedVisibility(visible = expanded) {
                 Column {
                     HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
+                    DetailRow(stringResource(R.string.label_app_version), device.appVersion)
                     DetailRow(stringResource(R.string.label_manufacturer), device.manufacturer)
                     DetailRow(stringResource(R.string.label_android_version),
                         device.androidVersion?.let { "Android $it" })

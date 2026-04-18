@@ -30,5 +30,6 @@ data class DeviceRow(
     // Explicitly included so the conflict-update path also refreshes this column.
     // Postgres DEFAULT now() only fires on INSERT; without this field, upsert
     // conflict-updates leave updated_at stale, triggering false "timed out" status.
-    @SerialName("updated_at")       val updatedAt: String
+    @SerialName("updated_at")       val updatedAt: String,
+    @SerialName("app_version")      val appVersion: String?
 )
