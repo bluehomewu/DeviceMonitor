@@ -22,6 +22,9 @@
     <!-- 開機自啟 -->
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
 
+    <!-- 側載安裝 APK（自體更新） -->
+    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
+
     <application
         android:allowBackup="true"
         android:dataExtractionRules="@xml/data_extraction_rules"
@@ -65,6 +68,17 @@
         <receiver
             android:name=".receiver.ServiceRestartReceiver"
             android:exported="false" />
+
+        <!-- FileProvider：供自體更新下載的 APK 安裝時分享 URI -->
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.fileprovider"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/file_paths" />
+        </provider>
 
         <!-- Device Admin Receiver：防止 App 被移除 -->
         <receiver

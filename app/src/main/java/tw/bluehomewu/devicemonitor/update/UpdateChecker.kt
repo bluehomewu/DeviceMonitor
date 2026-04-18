@@ -10,28 +10,47 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 
 /**
- * 從 GitHub Releases API 檢查是否有新版本可用。
+ * 從 GitHub Releases API 取得最新版本資訊。
  *
- * 使用方式：
- *   val info = UpdateChecker().checkForUpdate(BuildConfig.VERSION_NAME)
- *   if (info != null) // 有新版本，info.latestVersion / info.releaseUrl
- *
- * Release tag 格式：v1.4.0（去除 v 前綴後與 VERSION_NAME 比較）。
- * 上傳新版 APK 至 GitHub Releases 後，App 啟動時會自動提示使用者更新。
+ * Release tag 格式：v1.5.0（去除 v 前綴後與 VERSION_NAME 比較）。
+ * APK asset 需命名為 *.apk，否則 apkUrl 為 null（fallback 至開啟瀏覽器）。
  */
 class UpdateChecker {
 
     @Serializable
     private data class GitHubRelease(
-        @SerialName("tag_name") val tagName: String,
-        @SerialName("html_url") val htmlUrl: String
+        @SerialName("tag_name")  val tagName: String,
+        @SerialName("html_url")  val htmlUrl: String,
+        @SerialName("body")      val body: String = "",
+        @SerialName("assets")    val assets: List<GitHubAsset> = emptyList()
     )
 
-    data class UpdateInfo(val latestVersion: String, val releaseUrl: String)
+    @Serializable
+    private data class GitHubAsset(
+        @SerialName("name")                 val name: String,
+        @SerialName("browser_download_url") val browserDownloadUrl: String
+    )
+
+    /**
+     * @param version  版本號，例如 "1.5.0"（已去除 v 前綴）
+     * @param body     GitHub Release 的 Markdown 說明文字
+     * @param htmlUrl  GitHub Release 頁面 URL
+     * @param apkUrl   APK 直連下載 URL，無 APK asset 時為 null
+     */
+    data class ReleaseInfo(
+        val version: String,
+        val body: String,
+        val htmlUrl: String,
+        val apkUrl: String?
+    )
 
     private val json = Json { ignoreUnknownKeys = true }
 
-    suspend fun checkForUpdate(currentVersion: String): UpdateInfo? {
+    /**
+     * 取得最新 release 資訊（不論版本是否比當前新）。
+     * 供「點擊版本號查看 ChangeLog」使用。
+     */
+    suspend fun fetchLatestRelease(): ReleaseInfo? {
         val client = HttpClient(OkHttp)
         return try {
             runCatching {
@@ -39,10 +58,7 @@ class UpdateChecker {
                     header("Accept", "application/vnd.github+json")
                 }.bodyAsText()
                 val release = json.decodeFromString<GitHubRelease>(body)
-                val latestVersion = release.tagName.removePrefix("v")
-                if (isNewerVersion(latestVersion, currentVersion)) {
-                    UpdateInfo(latestVersion, release.htmlUrl)
-                } else null
+                release.toReleaseInfo()
             }.getOrNull()
         } finally {
             client.close()
@@ -50,10 +66,15 @@ class UpdateChecker {
     }
 
     /**
-     * 語意化版本比較（Major.Minor.Patch）。
-     * 回傳 true 表示 latest 比 current 新。
+     * 檢查是否有比 [currentVersion] 更新的版本。
+     * 有則回傳 [ReleaseInfo]，否則回傳 null。
      */
-    private fun isNewerVersion(latest: String, current: String): Boolean {
+    suspend fun checkForUpdate(currentVersion: String): ReleaseInfo? {
+        val info = fetchLatestRelease() ?: return null
+        return if (isNewerVersion(info.version, currentVersion)) info else null
+    }
+
+    fun isNewerVersion(latest: String, current: String): Boolean {
         val l = latest.split(".").map { it.toIntOrNull() ?: 0 }
         val c = current.split(".").map { it.toIntOrNull() ?: 0 }
         for (i in 0..2) {
@@ -65,11 +86,16 @@ class UpdateChecker {
         return false
     }
 
+    private fun GitHubRelease.toReleaseInfo() = ReleaseInfo(
+        version = tagName.removePrefix("v"),
+        body    = body,
+        htmlUrl = htmlUrl,
+        apkUrl  = assets.firstOrNull { it.name.endsWith(".apk") }?.browserDownloadUrl
+    )
+
     companion object {
         private const val RELEASES_API_URL =
             "https://api.github.com/repos/bluehomewu/DeviceMonitor/releases/latest"
-
-        /** 開啟此 URL 會自動跳轉至最新 release 頁面。 */
         const val RELEASES_PAGE_URL =
             "https://github.com/bluehomewu/DeviceMonitor/releases/latest"
     }

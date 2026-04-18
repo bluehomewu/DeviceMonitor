@@ -6,15 +6,20 @@ import android.content.Context
 import android.content.Intent
 import android.os.Build
 import android.provider.Settings
+import android.content.Intent
+import android.net.Uri
+import android.provider.Settings
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -27,16 +32,20 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -47,12 +56,16 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import tw.bluehomewu.devicemonitor.BuildConfig
 import tw.bluehomewu.devicemonitor.R
 import tw.bluehomewu.devicemonitor.receiver.DeviceAdminReceiver
 import tw.bluehomewu.devicemonitor.update.UpdateChecker
+import tw.bluehomewu.devicemonitor.ui.DownloadState
+import tw.bluehomewu.devicemonitor.ui.InstallEvent
+import tw.bluehomewu.devicemonitor.ui.ReleaseDialogState
 
 @Composable
 fun DeviceInfoScreen(
@@ -68,29 +81,41 @@ fun DeviceInfoScreen(
     val isMaster by vm.isMaster.collectAsStateWithLifecycle()
     val isServiceRunning by vm.isServiceRunning.collectAsStateWithLifecycle()
     val isPowerOptimizationIgnored by vm.isPowerOptimizationIgnored.collectAsStateWithLifecycle()
-    val updateInfo by vm.updateInfo.collectAsStateWithLifecycle()
+    val releaseDialog by vm.releaseDialog.collectAsStateWithLifecycle()
     val context = LocalContext.current
     val uriHandler = LocalUriHandler.current
 
-    updateInfo?.let { info ->
-        AlertDialog(
-            onDismissRequest = { vm.dismissUpdate() },
-            title = { Text(stringResource(R.string.update_available_title)) },
-            text = {
-                Text(stringResource(R.string.update_available_message, info.latestVersion))
-            },
-            confirmButton = {
-                TextButton(onClick = {
-                    uriHandler.openUri(UpdateChecker.RELEASES_PAGE_URL)
-                    vm.dismissUpdate()
-                }) {
-                    Text(stringResource(R.string.action_update))
+    // 收到安裝事件後由 UI 層啟動 Activity
+    LaunchedEffect(Unit) {
+        vm.installEvent.collect { event ->
+            when (event) {
+                is InstallEvent.OpenInstaller -> {
+                    val intent = Intent(Intent.ACTION_VIEW).apply {
+                        setDataAndType(event.uri, "application/vnd.android.package-archive")
+                        flags = Intent.FLAG_GRANT_READ_URI_PERMISSION or
+                                Intent.FLAG_ACTIVITY_NEW_TASK
+                    }
+                    context.startActivity(intent)
                 }
-            },
-            dismissButton = {
-                TextButton(onClick = { vm.dismissUpdate() }) {
-                    Text(stringResource(R.string.action_later))
+                InstallEvent.RequestInstallPermission -> {
+                    val intent = Intent(
+                        Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES,
+                        Uri.parse("package:${context.packageName}")
+                    )
+                    context.startActivity(intent)
                 }
+            }
+        }
+    }
+
+    releaseDialog?.let { dialogState ->
+        ReleaseDialog(
+            state = dialogState,
+            onDismiss = { vm.dismissReleaseDialog() },
+            onInstall = { vm.downloadAndInstall() },
+            onOpenBrowser = {
+                uriHandler.openUri(dialogState.release.htmlUrl)
+                vm.dismissReleaseDialog()
             }
         )
     }
@@ -312,11 +337,18 @@ fun DeviceInfoScreen(
                 Text(stringResource(R.string.section_about), style = MaterialTheme.typography.titleMedium)
                 Spacer(modifier = Modifier.height(8.dp))
                 Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { vm.showChangelog() },
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(stringResource(R.string.label_version), style = MaterialTheme.typography.bodyMedium)
-                    Text(BuildConfig.VERSION_NAME, style = MaterialTheme.typography.bodyMedium)
+                    Text(
+                        text = "${BuildConfig.VERSION_NAME} →",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.primary
+                    )
                 }
                 Spacer(modifier = Modifier.height(4.dp))
                 Row(
@@ -370,6 +402,107 @@ private fun deactivateDeviceAdmin(context: Context) {
     val dpm = context.getSystemService(Context.DEVICE_POLICY_SERVICE) as DevicePolicyManager
     val component = ComponentName(context, DeviceAdminReceiver::class.java)
     dpm.removeActiveAdmin(component)
+}
+
+/**
+ * 通用 Release Dialog：
+ * - isUpdate=true：顯示「有新版本」標題，提供安裝 / 略過按鈕
+ * - isUpdate=false：顯示「ChangeLog」標題，僅提供關閉按鈕
+ *
+ * 若 release 無附加 APK asset（apkUrl=null），安裝按鈕改為開啟瀏覽器。
+ */
+@Composable
+private fun ReleaseDialog(
+    state: ReleaseDialogState,
+    onDismiss: () -> Unit,
+    onInstall: () -> Unit,
+    onOpenBrowser: () -> Unit
+) {
+    val release = state.release
+    val title = if (state.isUpdate)
+        stringResource(R.string.update_available_title, release.version)
+    else
+        stringResource(R.string.changelog_dialog_title, release.version)
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(title) },
+        text = {
+            Column {
+                // 下載進度列
+                when (val ds = state.downloadState) {
+                    is DownloadState.InProgress -> {
+                        Text(
+                            text = stringResource(R.string.download_in_progress, ds.percent),
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                        Spacer(modifier = Modifier.height(4.dp))
+                        LinearProgressIndicator(
+                            progress = { ds.percent / 100f },
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                    }
+                    DownloadState.Failed -> {
+                        Text(
+                            text = stringResource(R.string.download_failed),
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.error
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                    }
+                    DownloadState.Idle -> Unit
+                }
+                HorizontalDivider()
+                Spacer(modifier = Modifier.height(8.dp))
+                // Release notes（可捲動）
+                Box(modifier = Modifier.heightIn(max = 320.dp)) {
+                    val scrollState = rememberScrollState()
+                    Text(
+                        text = release.body.ifBlank { stringResource(R.string.changelog_empty) },
+                        style = MaterialTheme.typography.bodySmall.copy(
+                            fontFamily = FontFamily.Monospace
+                        ),
+                        modifier = Modifier.verticalScroll(scrollState)
+                    )
+                }
+            }
+        },
+        confirmButton = {
+            if (state.isUpdate) {
+                val isDownloading = state.downloadState is DownloadState.InProgress
+                Button(
+                    onClick = { if (release.apkUrl != null) onInstall() else onOpenBrowser() },
+                    enabled = !isDownloading
+                ) {
+                    if (isDownloading) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(16.dp),
+                            strokeWidth = 2.dp,
+                            color = MaterialTheme.colorScheme.onPrimary
+                        )
+                    } else {
+                        Text(
+                            if (release.apkUrl != null) stringResource(R.string.action_install)
+                            else stringResource(R.string.action_update)
+                        )
+                    }
+                }
+            } else {
+                TextButton(onClick = onDismiss) {
+                    Text(stringResource(R.string.action_close))
+                }
+            }
+        },
+        dismissButton = {
+            if (state.isUpdate) {
+                TextButton(onClick = onDismiss) {
+                    Text(stringResource(R.string.action_later))
+                }
+            }
+        }
+    )
 }
 
 @Composable
