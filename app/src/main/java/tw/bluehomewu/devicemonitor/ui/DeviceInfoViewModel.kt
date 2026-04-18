@@ -18,14 +18,28 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import tw.bluehomewu.devicemonitor.BuildConfig
 import tw.bluehomewu.devicemonitor.data.collector.BatteryCollector
 import tw.bluehomewu.devicemonitor.data.collector.NetworkCollector
 import tw.bluehomewu.devicemonitor.data.model.DeviceInfo
 import tw.bluehomewu.devicemonitor.di.AppModule
 import tw.bluehomewu.devicemonitor.receiver.DeviceAdminReceiver
 import tw.bluehomewu.devicemonitor.service.DeviceMonitorService
+import tw.bluehomewu.devicemonitor.update.UpdateChecker
 
 class DeviceInfoViewModel(application: Application) : AndroidViewModel(application) {
+
+    // ── 更新檢測 ───────────────────────────────────────────────────
+    private val _updateInfo = MutableStateFlow<UpdateChecker.UpdateInfo?>(null)
+    val updateInfo: StateFlow<UpdateChecker.UpdateInfo?> = _updateInfo.asStateFlow()
+
+    init {
+        viewModelScope.launch {
+            _updateInfo.value = UpdateChecker().checkForUpdate(BuildConfig.VERSION_NAME)
+        }
+    }
+
+    fun dismissUpdate() { _updateInfo.value = null }
 
     private val prefs = application.getSharedPreferences("app_prefs", Context.MODE_PRIVATE)
     private val pm = application.getSystemService(Application.POWER_SERVICE) as PowerManager

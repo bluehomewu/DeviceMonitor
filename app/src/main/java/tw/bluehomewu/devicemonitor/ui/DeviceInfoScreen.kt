@@ -23,6 +23,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.DarkMode
 import androidx.compose.material.icons.filled.LightMode
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -51,6 +52,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import tw.bluehomewu.devicemonitor.BuildConfig
 import tw.bluehomewu.devicemonitor.R
 import tw.bluehomewu.devicemonitor.receiver.DeviceAdminReceiver
+import tw.bluehomewu.devicemonitor.update.UpdateChecker
 
 @Composable
 fun DeviceInfoScreen(
@@ -66,7 +68,32 @@ fun DeviceInfoScreen(
     val isMaster by vm.isMaster.collectAsStateWithLifecycle()
     val isServiceRunning by vm.isServiceRunning.collectAsStateWithLifecycle()
     val isPowerOptimizationIgnored by vm.isPowerOptimizationIgnored.collectAsStateWithLifecycle()
+    val updateInfo by vm.updateInfo.collectAsStateWithLifecycle()
     val context = LocalContext.current
+    val uriHandler = LocalUriHandler.current
+
+    updateInfo?.let { info ->
+        AlertDialog(
+            onDismissRequest = { vm.dismissUpdate() },
+            title = { Text(stringResource(R.string.update_available_title)) },
+            text = {
+                Text(stringResource(R.string.update_available_message, info.latestVersion))
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    uriHandler.openUri(UpdateChecker.RELEASES_PAGE_URL)
+                    vm.dismissUpdate()
+                }) {
+                    Text(stringResource(R.string.action_update))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { vm.dismissUpdate() }) {
+                    Text(stringResource(R.string.action_later))
+                }
+            }
+        )
+    }
 
     Column(
         modifier = modifier
@@ -279,7 +306,6 @@ fun DeviceInfoScreen(
         }
 
         // ── 關於 ──────────────────────────────────────────────────
-        val uriHandler = LocalUriHandler.current
         val githubUrl = stringResource(R.string.github_url)
         Card(modifier = Modifier.fillMaxWidth()) {
             Column(modifier = Modifier.padding(16.dp)) {

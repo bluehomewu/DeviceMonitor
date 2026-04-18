@@ -78,6 +78,10 @@
     <string name="status_stale">Offline (Timed Out)</string>
     <string name="action_cancel">Cancel</string>
     <string name="action_save">Save</string>
+    <string name="action_update">Update</string>
+    <string name="action_later">Later</string>
+    <string name="update_available_title">Update Available</string>
+    <string name="update_available_message">Version %s is available. Download the latest APK from GitHub Releases.</string>
     <string name="dialog_set_alias_title">Set Alias</string>
     <string name="dialog_alias_hint">Leave empty to use model name</string>
 
