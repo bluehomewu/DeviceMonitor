@@ -87,4 +87,16 @@ class DeviceListViewModel(
             }.onFailure { Log.e(TAG, "setAlertThreshold failed", it) }
         }
     }
+
+    /** 設定裝置別名，空字串視為清除別名。樂觀更新本地快取後同步到 Supabase。 */
+    fun setAlias(deviceId: String, alias: String) {
+        val trimmed = alias.trim().takeIf { it.isNotEmpty() }
+        // 樂觀更新：立即反映到 UI
+        deviceStateHolder.updateAlias(deviceId, trimmed)
+        viewModelScope.launch {
+            runCatching {
+                deviceRepository.setAlias(deviceId, trimmed)
+            }.onFailure { Log.e(TAG, "setAlias failed", it) }
+        }
+    }
 }

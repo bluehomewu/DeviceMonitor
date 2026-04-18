@@ -20,10 +20,12 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.BatteryChargingFull
 import androidx.compose.material.icons.filled.BatteryFull
 import androidx.compose.material.icons.filled.Circle
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.ExpandLess
 import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material.icons.filled.PhoneAndroid
 import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -31,8 +33,10 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
@@ -125,7 +129,8 @@ fun DeviceListScreen(
                     DeviceCard(
                         device = device,
                         isCurrentDevice = device.deviceName == vm.currentDeviceName,
-                        onThresholdChange = { threshold -> vm.setAlertThreshold(device.id, threshold) }
+                        onThresholdChange = { threshold -> vm.setAlertThreshold(device.id, threshold) },
+                        onAliasChange = { alias -> vm.setAlias(device.id, alias) }
                     )
                 }
             }
@@ -137,12 +142,25 @@ fun DeviceListScreen(
 private fun DeviceCard(
     device: DeviceRecord,
     isCurrentDevice: Boolean,
-    onThresholdChange: (Int) -> Unit
+    onThresholdChange: (Int) -> Unit,
+    onAliasChange: (String) -> Unit
 ) {
     var sliderValue by remember(device.alertThreshold) {
         mutableFloatStateOf(device.alertThreshold.toFloat())
     }
     var expanded by rememberSaveable { mutableStateOf(false) }
+    var showAliasDialog by remember { mutableStateOf(false) }
+
+    if (showAliasDialog) {
+        AliasEditDialog(
+            currentAlias = device.alias ?: "",
+            onConfirm = { input ->
+                onAliasChange(input)
+                showAliasDialog = false
+            },
+            onDismiss = { showAliasDialog = false }
+        )
+    }
 
     val stale = isStale(device.updatedAt)
     val isEffectivelyOnline = device.isOnline && !stale
@@ -181,7 +199,7 @@ private fun DeviceCard(
                 Column(modifier = Modifier.weight(1f)) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Text(
-                            text = device.deviceName,
+                            text = device.alias ?: device.deviceName,
                             style = MaterialTheme.typography.titleSmall,
                             fontWeight = if (isCurrentDevice) FontWeight.Bold else FontWeight.Normal
                         )
@@ -201,6 +219,14 @@ private fun DeviceCard(
                                 color = MaterialTheme.colorScheme.tertiary
                             )
                         }
+                    }
+                    // 有別名時，在下方顯示原始 model name 作為副標題
+                    if (device.alias != null) {
+                        Text(
+                            text = device.deviceName,
+                            style = MaterialTheme.typography.labelSmall,
+                            color = LocalContentColor.current.copy(alpha = 0.5f)
+                        )
                     }
 
                     Row(
@@ -250,6 +276,17 @@ private fun DeviceCard(
                     tint = dotColor
                 )
                 Spacer(modifier = Modifier.width(4.dp))
+                IconButton(
+                    onClick = { showAliasDialog = true },
+                    modifier = Modifier.size(32.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Edit,
+                        contentDescription = stringResource(R.string.dialog_set_alias_title),
+                        modifier = Modifier.size(16.dp),
+                        tint = LocalContentColor.current.copy(alpha = 0.6f)
+                    )
+                }
                 Icon(
                     imageVector = if (expanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
                     contentDescription = null,
@@ -338,6 +375,37 @@ private fun formatRelativeTime(updatedAt: String): String? {
     } catch (_: Exception) {
         null
     }
+}
+
+@Composable
+private fun AliasEditDialog(
+    currentAlias: String,
+    onConfirm: (String) -> Unit,
+    onDismiss: () -> Unit
+) {
+    var input by remember { mutableStateOf(currentAlias) }
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.dialog_set_alias_title)) },
+        text = {
+            OutlinedTextField(
+                value = input,
+                onValueChange = { input = it },
+                placeholder = { Text(stringResource(R.string.dialog_alias_hint)) },
+                singleLine = true
+            )
+        },
+        confirmButton = {
+            TextButton(onClick = { onConfirm(input) }) {
+                Text(stringResource(R.string.action_save))
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text(stringResource(R.string.action_cancel))
+            }
+        }
+    )
 }
 
 /**

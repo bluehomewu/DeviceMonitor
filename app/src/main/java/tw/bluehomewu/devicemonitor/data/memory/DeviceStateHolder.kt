@@ -62,6 +62,13 @@ class DeviceStateHolder(private val prefs: SharedPreferences) {
         prefs.edit().putString(PREF_KEY, cacheJson.encodeToString(sorted)).apply()
     }
 
+    /** 樂觀更新指定裝置的別名（null 表示清除）。 */
+    fun updateAlias(deviceId: String, alias: String?) {
+        _devices.update { current ->
+            current.map { if (it.id == deviceId) it.copy(alias = alias) else it }
+        }
+    }
+
     /** 刪除指定裝置（Realtime DELETE 時使用）。 */
     fun removeById(id: String) {
         _devices.update { current -> current.filter { it.id != id } }

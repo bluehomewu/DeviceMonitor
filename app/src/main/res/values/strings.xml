@@ -73,7 +73,12 @@
     <string name="label_build_number">Build Number</string>
     <string name="label_sim_operator">SIM Operator</string>
     <string name="label_last_updated">Last Updated</string>
+    <string name="label_model">Model</string>
     <string name="status_stale">Offline (Timed Out)</string>
+    <string name="action_cancel">Cancel</string>
+    <string name="action_save">Save</string>
+    <string name="dialog_set_alias_title">Set Alias</string>
+    <string name="dialog_alias_hint">Leave empty to use model name</string>
 
     <!-- Notifications -->
     <string name="notif_channel_monitor_name">Device Monitor</string>

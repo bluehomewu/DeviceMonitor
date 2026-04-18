@@ -24,5 +24,6 @@ data class DeviceRecord(
     @SerialName("android_version")  val androidVersion: String? = null,
     @SerialName("manufacturer")     val manufacturer: String? = null,
     @SerialName("build_number")     val buildNumber: String? = null,
-    @SerialName("sim_operator")     val simOperator: String? = null
+    @SerialName("sim_operator")     val simOperator: String? = null,
+    @SerialName("alias")            val alias: String? = null
 )

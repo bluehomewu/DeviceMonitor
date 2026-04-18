@@ -73,6 +73,15 @@ class DeviceRepository(private val supabase: SupabaseClient) {
         }
     }
 
+    /** 更新指定裝置的顯示別名（null 表示清除別名，還原顯示 device_name）。 */
+    suspend fun setAlias(deviceId: String, alias: String?) {
+        supabase.from("devices").update(
+            { set("alias", alias) }
+        ) {
+            filter { eq("id", deviceId) }
+        }
+    }
+
     /** 更新指定裝置的低電量警報閾值（10% 間隔，10–100）。 */
     suspend fun setAlertThreshold(deviceId: String, threshold: Int) {
         supabase.from("devices").update(
