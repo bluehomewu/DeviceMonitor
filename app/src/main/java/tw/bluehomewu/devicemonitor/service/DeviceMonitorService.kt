@@ -11,6 +11,7 @@ import android.content.Intent
 import android.os.IBinder
 import android.os.PowerManager
 import android.os.SystemClock
+import tw.bluehomewu.devicemonitor.MainActivity
 import tw.bluehomewu.devicemonitor.receiver.ServiceRestartReceiver
 import android.telephony.TelephonyManager
 import android.util.Log
@@ -373,14 +374,23 @@ class DeviceMonitorService : Service() {
         nm.notify(NOTIF_ID, buildNotification(text))
     }
 
-    private fun buildNotification(text: String): Notification =
-        NotificationCompat.Builder(this, CHANNEL_ID)
+    private fun buildNotification(text: String): Notification {
+        val tapIntent = PendingIntent.getActivity(
+            this, 0,
+            Intent(this, MainActivity::class.java).apply {
+                flags = Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_CLEAR_TOP
+            },
+            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
+        )
+        return NotificationCompat.Builder(this, CHANNEL_ID)
             .setContentTitle(getString(R.string.notif_title))
             .setContentText(text)
             .setSmallIcon(android.R.drawable.ic_dialog_info)
             .setOngoing(true)
             .setPriority(NotificationCompat.PRIORITY_LOW)
+            .setContentIntent(tapIntent)
             .build()
+    }
 
     private fun createNotificationChannel() {
         val channel = NotificationChannel(
