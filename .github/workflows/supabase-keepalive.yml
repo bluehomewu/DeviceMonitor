@@ -17,8 +17,6 @@ jobs:
     steps:
       - name: Ping Supabase
         run: |
-          # Keep-alive 目的：讓 Supabase 收到請求、防止專案因閒置被暫停。
-          # 任何 HTTP 回應（含 4xx）都代表專案存活；只有 curl 無法連線（000）才算失敗。
           HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" --max-time 15 \
             "${{ secrets.SUPABASE_URL }}/rest/v1/" \
             -H "apikey: ${{ secrets.SUPABASE_ANON_KEY }}" \
@@ -27,8 +25,13 @@ jobs:
           echo "HTTP Status: $HTTP_STATUS"
 
           if [ "$HTTP_STATUS" = "000" ]; then
-            echo "::error::Supabase 無法連線（curl timeout 或網路錯誤）"
+            echo "::error::Supabase 無法連線（curl timeout 或網路錯誤），專案可能已暫停"
             exit 1
+          elif [ "$HTTP_STATUS" -ge 500 ]; then
+            echo "::error::Supabase 回應 $HTTP_STATUS，伺服器異常"
+            exit 1
+          elif [ "$HTTP_STATUS" -ge 400 ]; then
+            echo "::warning::Supabase 回應 $HTTP_STATUS — 專案存活，但 API key 可能有誤，請至 GitHub Settings > Secrets 確認 SUPABASE_ANON_KEY"
+          else
+            echo "Supabase ping 成功 (HTTP $HTTP_STATUS)"
           fi
-
-          echo "Supabase ping 成功 (HTTP $HTTP_STATUS) — 專案存活"
