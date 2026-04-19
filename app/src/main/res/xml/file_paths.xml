@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <paths>
-    <!-- app 外部檔案目錄下的 Downloads 資料夾，供 FileProvider 分享下載的 APK -->
-    <external-files-path name="apk_downloads" path="Downloads/" />
+    <!-- 覆蓋整個 app 外部檔案目錄（path="." 相容各裝置 DIRECTORY_DOWNLOADS 命名差異）-->
+    <external-files-path name="apk_downloads" path="." />
 </paths>
