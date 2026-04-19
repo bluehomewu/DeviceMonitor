@@ -26,3 +26,4 @@ keystore.properties
 # AI assistant instruction files (internal dev tooling, not for end users)
 CLAUDE.md
 AGENTS.md
+.claude/
