@@ -28,12 +28,16 @@ jobs:
           echo "URL length : ${#URL}"
           echo "KEY length : ${#KEY}"
 
-          HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" --max-time 15 \
+          RESPONSE=$(curl -s -w "\n%{http_code}" --max-time 15 \
             "$URL/rest/v1/" \
             -H "apikey: $KEY" \
             -H "Authorization: Bearer $KEY")
 
+          HTTP_STATUS=$(echo "$RESPONSE" | tail -1)
+          BODY=$(echo "$RESPONSE" | head -n -1)
+
           echo "HTTP Status: $HTTP_STATUS"
+          echo "Response body: $BODY"
 
           if [ "$HTTP_STATUS" = "000" ]; then
             echo "::error::Supabase 無法連線（curl timeout 或網路錯誤），專案可能已暫停"
