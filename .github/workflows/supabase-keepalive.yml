@@ -17,9 +17,11 @@ jobs:
     steps:
       - name: Ping Supabase
         run: |
-          # /auth/v1/health 不需要 apikey，專案存活就回 200，最可靠的 keep-alive 目標
+          # Supabase 現行版本需同時帶 apikey 與 Authorization 兩個 header
           HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" \
-            "${{ secrets.SUPABASE_URL }}/auth/v1/health")
+            "${{ secrets.SUPABASE_URL }}/rest/v1/" \
+            -H "apikey: ${{ secrets.SUPABASE_ANON_KEY }}" \
+            -H "Authorization: Bearer ${{ secrets.SUPABASE_ANON_KEY }}")
 
           echo "HTTP Status: $HTTP_STATUS"
 
