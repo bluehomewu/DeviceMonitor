@@ -22,7 +22,11 @@ class ServiceWatchdogWorker(
 
         if (!DeviceMonitorService.isRunning.value) {
             Log.i(TAG, "Service 已停止，重新啟動")
-            context.startForegroundService(Intent(context, DeviceMonitorService::class.java))
+            try {
+                context.startForegroundService(Intent(context, DeviceMonitorService::class.java))
+            } catch (e: RuntimeException) {
+                Log.w(TAG, "無法重啟 Service（FGS 限制）：${e.message}")
+            }
         }
         return Result.success()
     }

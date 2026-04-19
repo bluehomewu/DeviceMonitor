@@ -13,7 +13,7 @@
     <!-- Foreground Service -->
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
-    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
     <uses-permission android:name="android.permission.WAKE_LOCK" />
 
     <!-- 通知（Android 13+） -->
@@ -48,11 +48,15 @@
             </intent-filter>
         </activity>
 
-        <!-- Foreground Service：dataSync type（Android 12+ 需聲明） -->
+        <!-- Foreground Service：specialUse type（無時間限制、可從背景啟動） -->
         <service
             android:name=".service.DeviceMonitorService"
-            android:foregroundServiceType="dataSync"
-            android:exported="false" />
+            android:foregroundServiceType="specialUse"
+            android:exported="false">
+            <property
+                android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
+                android:value="Monitor battery and network status of multiple devices in the background." />
+        </service>
 
         <!-- 開機自啟 + APK 更新後重啟 Service -->
         <receiver

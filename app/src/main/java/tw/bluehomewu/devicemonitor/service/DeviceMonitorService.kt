@@ -116,7 +116,13 @@ class DeviceMonitorService : Service() {
         simOperator = tm.simOperatorName.takeIf { it.isNotBlank() }
         createNotificationChannel()
         alertNotificationManager.createChannel()
-        startForeground(NOTIF_ID, buildNotification(getString(R.string.notif_initializing)))
+        try {
+            startForeground(NOTIF_ID, buildNotification(getString(R.string.notif_initializing)))
+        } catch (e: RuntimeException) {
+            Log.e(TAG, "startForeground 失敗（FGS 時間限制耗盡），停止 service：${e.message}")
+            stopSelf()
+            return
+        }
         startMonitoring()
     }
 

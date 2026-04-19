@@ -19,7 +19,11 @@ class DeviceMonitorApplication : Application() {
         // APK 更新後 Service 會被殺掉；若使用者先前已啟動監控，自動重啟
         val prefs = getSharedPreferences("app_prefs", MODE_PRIVATE)
         if (prefs.getBoolean("service_enabled", false)) {
-            startForegroundService(Intent(this, DeviceMonitorService::class.java))
+            try {
+                startForegroundService(Intent(this, DeviceMonitorService::class.java))
+            } catch (e: RuntimeException) {
+                android.util.Log.w("DeviceMonitorApp", "Application 自動重啟 Service 失敗（FGS 限制）：${e.message}")
+            }
         }
 
         // WorkManager 看門狗：每 15 分鐘確認 Service 仍在執行，否則重啟

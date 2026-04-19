@@ -17,7 +17,11 @@ class ServiceRestartReceiver : BroadcastReceiver() {
         if (!prefs.getBoolean("service_enabled", false)) return
 
         Log.i(TAG, "AlarmManager 觸發，重啟 DeviceMonitorService")
-        context.startForegroundService(Intent(context, DeviceMonitorService::class.java))
+        try {
+            context.startForegroundService(Intent(context, DeviceMonitorService::class.java))
+        } catch (e: RuntimeException) {
+            Log.w(TAG, "無法重啟 Service（FGS 限制）：${e.message}")
+        }
     }
 
     companion object {
