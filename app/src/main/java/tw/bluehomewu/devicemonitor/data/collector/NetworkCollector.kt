@@ -12,6 +12,7 @@ import android.os.Build
 import android.telephony.PhoneStateListener
 import android.telephony.TelephonyDisplayInfo
 import android.telephony.TelephonyManager
+import androidx.annotation.RequiresApi
 import androidx.core.content.ContextCompat
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.awaitClose
@@ -40,7 +41,8 @@ class NetworkCollector(private val context: Context) {
         val wm = context.getSystemService(Context.WIFI_SERVICE) as WifiManager
         val tm = context.getSystemService(Context.TELEPHONY_SERVICE) as TelephonyManager
 
-        var latestDisplayInfo: TelephonyDisplayInfo? = null
+        // TelephonyDisplayInfo is API 30+; kept as Any? so the field itself has no API-level requirement
+        var latestDisplayInfo: Any? = null
 
         fun hasPermission(perm: String) =
             ContextCompat.checkSelfPermission(context, perm) == PackageManager.PERMISSION_GRANTED
@@ -95,6 +97,7 @@ class NetworkCollector(private val context: Context) {
         @Suppress("DEPRECATION")
         val phoneStateListener = withContext(Dispatchers.Main) {
             object : PhoneStateListener() {
+                @RequiresApi(Build.VERSION_CODES.R)
                 override fun onDisplayInfoChanged(telephonyDisplayInfo: TelephonyDisplayInfo) {
                     latestDisplayInfo = telephonyDisplayInfo
                     trySend(currentNetworkInfo())
@@ -102,7 +105,9 @@ class NetworkCollector(private val context: Context) {
             }
         }
 
-        if (hasPermission(Manifest.permission.READ_PHONE_STATE)) {
+        // LISTEN_DISPLAY_INFO_CHANGED is API 30+; on API 29 we fall back to tm.dataNetworkType
+        if (hasPermission(Manifest.permission.READ_PHONE_STATE) &&
+            Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
             withContext(Dispatchers.Main) {
                 @Suppress("DEPRECATION")
                 tm.listen(phoneStateListener, PhoneStateListener.LISTEN_DISPLAY_INFO_CHANGED)
@@ -123,13 +128,15 @@ class NetworkCollector(private val context: Context) {
     }
 
     // Logic mirrors CLAUDE.md spec: NR_NSA → 5G NSA, NR_ADVANCED → 5G SA, networkType NR → 5G SA
-    private fun determineCellularType(tm: TelephonyManager, displayInfo: TelephonyDisplayInfo?): String {
-        if (displayInfo != null) {
-            return when (displayInfo.overrideNetworkType) {
+    // displayInfo is Any? (TelephonyDisplayInfo on API 30+, null on API 29)
+    private fun determineCellularType(tm: TelephonyManager, displayInfo: Any?): String {
+        if (displayInfo != null && Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            val info = displayInfo as TelephonyDisplayInfo
+            return when (info.overrideNetworkType) {
                 TelephonyDisplayInfo.OVERRIDE_NETWORK_TYPE_NR_NSA,
                 TelephonyDisplayInfo.OVERRIDE_NETWORK_TYPE_NR_NSA_MMWAVE -> "5G NSA"
                 TelephonyDisplayInfo.OVERRIDE_NETWORK_TYPE_NR_ADVANCED -> "5G SA"
-                else -> when (displayInfo.networkType) {
+                else -> when (info.networkType) {
                     TelephonyManager.NETWORK_TYPE_NR  -> "5G SA"
                     TelephonyManager.NETWORK_TYPE_LTE -> "LTE"
                     else                              -> "4G"

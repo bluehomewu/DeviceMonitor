@@ -22,7 +22,7 @@ android {
 
     defaultConfig {
         applicationId = "tw.bluehomewu.devicemonitor"
-        minSdk = 30
+        minSdk = 29
         targetSdk = 36
         versionCode = 11
         versionName = "1.6.1"
