@@ -28,8 +28,10 @@ jobs:
           echo "URL length : ${#URL}"
           echo "KEY length : ${#KEY}"
 
+          # /rest/v1/ 現已限制 service_role only；改查 devices 表觸發真實 DB 請求
+          # anon key + RLS → 回傳 [] 但 HTTP 200，足以讓 Supabase 維持存活
           RESPONSE=$(curl -s -w "\n%{http_code}" --max-time 15 \
-            "$URL/rest/v1/" \
+            "$URL/rest/v1/devices?limit=1" \
             -H "apikey: $KEY" \
             -H "Authorization: Bearer $KEY")
 
