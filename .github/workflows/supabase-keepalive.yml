@@ -16,11 +16,22 @@ jobs:
 
     steps:
       - name: Ping Supabase
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
         run: |
+          # 清除複製貼上時可能混入的換行 / 空白 / 結尾斜線
+          URL="$(echo -n "$SUPABASE_URL"  | tr -d '[:space:]')"
+          KEY="$(echo -n "$SUPABASE_ANON_KEY" | tr -d '[:space:]')"
+          URL="${URL%/}"
+
+          echo "URL length : ${#URL}"
+          echo "KEY length : ${#KEY}"
+
           HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" --max-time 15 \
-            "${{ secrets.SUPABASE_URL }}/rest/v1/" \
-            -H "apikey: ${{ secrets.SUPABASE_ANON_KEY }}" \
-            -H "Authorization: Bearer ${{ secrets.SUPABASE_ANON_KEY }}")
+            "$URL/rest/v1/" \
+            -H "apikey: $KEY" \
+            -H "Authorization: Bearer $KEY")
 
           echo "HTTP Status: $HTTP_STATUS"
 
@@ -31,7 +42,8 @@ jobs:
             echo "::error::Supabase 回應 $HTTP_STATUS，伺服器異常"
             exit 1
           elif [ "$HTTP_STATUS" -ge 400 ]; then
-            echo "::warning::Supabase 回應 $HTTP_STATUS — 專案存活，但 API key 可能有誤，請至 GitHub Settings > Secrets 確認 SUPABASE_ANON_KEY"
+            echo "::error::Supabase 回應 $HTTP_STATUS，請確認 GitHub Secret SUPABASE_URL / SUPABASE_ANON_KEY 是否正確"
+            exit 1
           else
             echo "Supabase ping 成功 (HTTP $HTTP_STATUS)"
           fi
