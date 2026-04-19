@@ -17,17 +17,18 @@ jobs:
     steps:
       - name: Ping Supabase
         run: |
-          # Supabase 現行版本需同時帶 apikey 與 Authorization 兩個 header
-          HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" \
+          # Keep-alive 目的：讓 Supabase 收到請求、防止專案因閒置被暫停。
+          # 任何 HTTP 回應（含 4xx）都代表專案存活；只有 curl 無法連線（000）才算失敗。
+          HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" --max-time 15 \
             "${{ secrets.SUPABASE_URL }}/rest/v1/" \
             -H "apikey: ${{ secrets.SUPABASE_ANON_KEY }}" \
             -H "Authorization: Bearer ${{ secrets.SUPABASE_ANON_KEY }}")
 
           echo "HTTP Status: $HTTP_STATUS"
 
-          if [ "$HTTP_STATUS" -lt 200 ] || [ "$HTTP_STATUS" -ge 300 ]; then
-            echo "::error::Supabase ping 失敗，HTTP $HTTP_STATUS"
+          if [ "$HTTP_STATUS" = "000" ]; then
+            echo "::error::Supabase 無法連線（curl timeout 或網路錯誤）"
             exit 1
           fi
 
-          echo "Supabase ping 成功 (HTTP $HTTP_STATUS)"
+          echo "Supabase ping 成功 (HTTP $HTTP_STATUS) — 專案存活"
