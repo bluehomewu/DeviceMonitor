@@ -57,16 +57,26 @@ class AlertNotificationManager(
         Log.d(TAG, "checkAndNotify: ${record.deviceName} level=$level% threshold=$threshold%")
 
         if (level < threshold) {
-            val lastLevel = lastNotifiedLevel[deviceId]
-            if (lastLevel != level) {
-                Log.i(TAG, "觸發低電量通知：${record.deviceName} $level% < $threshold%（前次=$lastLevel）")
-                lastNotifiedLevel[deviceId] = level
-                postAlert(record.deviceName, level, threshold, deviceId)
+            if (record.isCharging) {
+                // Charging will resolve the low battery — suppress notifications and reset state
+                // so that if charging stops while still below threshold we fire a fresh alert.
+                if (lastNotifiedLevel.remove(deviceId) != null) {
+                    Log.d(TAG, "${record.deviceName} 充電中（$level%），清除通知狀態，等待充電結束或超過閾值")
+                } else {
+                    Log.d(TAG, "${record.deviceName} 充電中（$level% < $threshold%），略過通知")
+                }
             } else {
-                Log.d(TAG, "電量未變（$level%），略過重複通知：${record.deviceName}")
+                val lastLevel = lastNotifiedLevel[deviceId]
+                if (lastLevel != level) {
+                    Log.i(TAG, "觸發低電量通知：${record.deviceName} $level% < $threshold%（前次=$lastLevel）")
+                    lastNotifiedLevel[deviceId] = level
+                    postAlert(record.deviceName, level, threshold, deviceId)
+                } else {
+                    Log.d(TAG, "電量未變（$level%），略過重複通知：${record.deviceName}")
+                }
             }
         } else {
-            // Battery recovered — reset so next drop can trigger again
+            // Battery recovered above threshold — reset so next drop can trigger again
             if (lastNotifiedLevel.remove(deviceId) != null) {
                 Log.d(TAG, "${record.deviceName} 電量已回復（$level% >= $threshold%），重設通知狀態")
             }
