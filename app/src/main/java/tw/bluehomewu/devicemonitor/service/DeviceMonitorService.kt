@@ -304,7 +304,8 @@ class DeviceMonitorService : Service() {
                     networkType = network.networkType,
                     wifiSsid = network.wifiSsid,
                     carrierName = network.carrierName,
-                    signalLevel = network.signalLevel
+                    signalLevel = network.signalLevel,
+                    signalDbm = network.signalDbm
                 )
             }.collect { info ->
                 latestInfo = info

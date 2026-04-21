@@ -25,7 +25,8 @@ data class NetworkInfo(
     val networkType: String,
     val wifiSsid: String?,
     val carrierName: String?,
-    val signalLevel: Int?   // 0–4 bars; null = unknown / not applicable
+    val signalLevel: Int?,  // 0–4 bars; null = unknown / not applicable
+    val signalDbm: Int?     // RSSI dBm (Wi-Fi) or RSRP/RSSI dBm (cellular); null = unavailable
 )
 
 class NetworkCollector(private val context: Context) {
@@ -63,7 +64,7 @@ class NetworkCollector(private val context: Context) {
             val caps = cm.getNetworkCapabilities(active)
 
             return when {
-                caps == null -> NetworkInfo("無連線", null, null, null)
+                caps == null -> NetworkInfo("無連線", null, null, null, null)
 
                 caps.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) -> {
                     val ssid = if (hasPermission(Manifest.permission.ACCESS_FINE_LOCATION)) {
@@ -83,7 +84,8 @@ class NetworkCollector(private val context: Context) {
 
                     @Suppress("DEPRECATION")
                     val rssi = wm.connectionInfo?.rssi ?: Int.MIN_VALUE
-                    val wifiSignalLevel: Int? = if (rssi != Int.MIN_VALUE && rssi < 0) {
+                    val validRssi = rssi != Int.MIN_VALUE && rssi < 0
+                    val wifiSignalLevel: Int? = if (validRssi) {
                         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
                             wm.calculateSignalLevel(rssi)
                         } else {
@@ -91,18 +93,26 @@ class NetworkCollector(private val context: Context) {
                             WifiManager.calculateSignalLevel(rssi, 5)
                         }
                     } else null
+                    val wifiDbm: Int? = if (validRssi) rssi else null
 
-                    NetworkInfo("Wi-Fi", ssid, null, wifiSignalLevel)
+                    NetworkInfo("Wi-Fi", ssid, null, wifiSignalLevel, wifiDbm)
                 }
 
                 caps.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR) -> {
                     val type = determineCellularType(tm, latestDisplayInfo)
                     val carrier = tm.networkOperatorName.takeIf { it.isNotEmpty() }
-                    val cellSignalLevel = (latestSignalStrength as? SignalStrength)?.level
-                    NetworkInfo(type, null, carrier, cellSignalLevel)
+                    val ss = latestSignalStrength as? SignalStrength
+                    val cellSignalLevel = ss?.level
+                    // cellSignalStrengths is API 29+; pick the entry with the highest level,
+                    // filter out Int.MAX_VALUE which Android uses for "unavailable".
+                    val cellDbm = ss?.cellSignalStrengths
+                        ?.filter { it.dbm != Int.MAX_VALUE && it.dbm != Int.MIN_VALUE }
+                        ?.maxByOrNull { it.level }
+                        ?.dbm
+                    NetworkInfo(type, null, carrier, cellSignalLevel, cellDbm)
                 }
 
-                else -> NetworkInfo("其他", null, null, null)
+                else -> NetworkInfo("其他", null, null, null, null)
             }
         }
 

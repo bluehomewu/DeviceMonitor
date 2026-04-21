@@ -27,5 +27,6 @@ data class DeviceRecord(
     @SerialName("sim_operator")     val simOperator: String? = null,
     @SerialName("alias")            val alias: String? = null,
     @SerialName("app_version")      val appVersion: String? = null,
-    @SerialName("signal_level")     val signalLevel: Int? = null
+    @SerialName("signal_level")     val signalLevel: Int? = null,
+    @SerialName("signal_dbm")       val signalDbm: Int? = null
 )

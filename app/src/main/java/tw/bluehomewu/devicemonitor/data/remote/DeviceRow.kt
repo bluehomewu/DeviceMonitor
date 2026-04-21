@@ -34,5 +34,6 @@ data class DeviceRow(
     @SerialName("app_version")      val appVersion: String?,
     // No default value: ensures null is always serialized so the column is cleared
     // when switching between Wi-Fi and cellular (same pattern as wifi_ssid / carrier_name).
-    @SerialName("signal_level")     val signalLevel: Int?
+    @SerialName("signal_level")     val signalLevel: Int?,
+    @SerialName("signal_dbm")       val signalDbm: Int?
 )

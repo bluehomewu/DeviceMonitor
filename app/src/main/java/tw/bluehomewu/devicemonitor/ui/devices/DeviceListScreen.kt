@@ -499,6 +499,13 @@ private fun DeviceCard(
                         device.signalLevel?.let { level ->
                             SignalBarsIcon(level = level, modifier = Modifier.height(13.dp))
                         }
+                        device.signalDbm?.let { dbm ->
+                            Text(
+                                text = "$dbm dBm",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = LocalContentColor.current.copy(alpha = 0.7f)
+                            )
+                        }
                     }
                 }
 
