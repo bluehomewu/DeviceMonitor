@@ -33,6 +33,7 @@ import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material.icons.filled.PhoneAndroid
 import androidx.compose.material.icons.filled.PushPin
 import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.outlined.PushPin
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
@@ -147,7 +148,8 @@ private class DragDropState(private val lazyListState: LazyListState) {
 @Composable
 fun DeviceListScreen(
     modifier: Modifier = Modifier,
-    vm: DeviceListViewModel = viewModel(factory = DeviceListViewModel.factory())
+    vm: DeviceListViewModel = viewModel(factory = DeviceListViewModel.factory()),
+    onPairDevice: () -> Unit = {}
 ) {
     val devices by vm.devices.collectAsStateWithLifecycle()
     val pinnedIds by vm.pinnedIds.collectAsStateWithLifecycle()
@@ -184,6 +186,9 @@ fun DeviceListScreen(
                 text = stringResource(R.string.device_list_title, devices.size),
                 style = MaterialTheme.typography.headlineMedium
             )
+            IconButton(onClick = onPairDevice) {
+                Icon(Icons.Default.Share, contentDescription = "配對裝置")
+            }
             IconButton(onClick = { vm.refresh() }, enabled = !isRefreshing) {
                 if (isRefreshing) {
                     CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp)

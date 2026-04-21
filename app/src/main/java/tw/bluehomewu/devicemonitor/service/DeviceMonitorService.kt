@@ -159,7 +159,8 @@ class DeviceMonitorService : Service() {
             runCatching {
                 realtimeRepository.stopListening()
                 val uid = cachedUid ?: return@launch
-                deviceRepository.markOffline(uid)
+                val ownerUid = AppModule.groupUidManager.get() ?: uid
+                deviceRepository.markOffline(ownerUid)
             }
         }
         scope.cancel()
@@ -273,17 +274,18 @@ class DeviceMonitorService : Service() {
             cachedUid = uid
             Log.i(TAG, "Auth 就緒，uid=${uid!!.take(8)}，開始初始載入")
 
+            // 配對裝置使用群組 UID 訂閱 Realtime，以接收到邀請方帳號下的所有裝置更新
+            val effectiveUid = AppModule.groupUidManager.get() ?: uid!!
+
             runCatching {
                 val records = deviceRepository.fetchAll()
                 deviceStateHolder.setAll(records)
                 Log.d(TAG, "初始載入 ${records.size} 台裝置")
-                // 初始載入後立即對所有裝置做一次警報檢查，
-                // 確保主裝置啟動時已低於閾值的裝置能立即發出通知。
                 records.forEach { alertNotificationManager.checkAndNotify(it) }
             }.onFailure { Log.e(TAG, "初始載入失敗", it) }
 
             runCatching {
-                realtimeRepository.startListening(uid!!, scope)
+                realtimeRepository.startListening(effectiveUid, scope)
             }.onFailure { Log.e(TAG, "Realtime 訂閱失敗", it) }
         }
 
@@ -357,13 +359,15 @@ class DeviceMonitorService : Service() {
 
     private fun syncToSupabase(info: DeviceInfo, reason: String) {
         scope.launch {
-            val uid = ensureValidSession()
-            if (uid == null) {
+            val authUid = ensureValidSession()
+            if (authUid == null) {
                 Log.w(TAG, "[$reason] session 無效且無法刷新，跳過 upsert")
                 return@launch
             }
+            // Paired (no-GMS) devices use the inviter's group UID as owner_uid
+            val ownerUid = AppModule.groupUidManager.get() ?: authUid
             runCatching {
-                deviceRepository.upsertDevice(uid, info, simOperator)
+                deviceRepository.upsertDevice(ownerUid, info, simOperator)
                 Log.d(TAG, "[$reason] upsert 成功：電量=${info.batteryLevel}% 網路=${info.networkType}")
             }.onFailure { e ->
                 Log.e(TAG, "[$reason] upsert 失敗：${e::class.simpleName} — ${e.message}")

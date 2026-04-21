@@ -46,6 +46,7 @@ import tw.bluehomewu.devicemonitor.ui.auth.AuthViewModel
 import tw.bluehomewu.devicemonitor.ui.auth.LoginScreen
 import tw.bluehomewu.devicemonitor.ui.devices.DeviceListScreen
 import tw.bluehomewu.devicemonitor.ui.devices.DeviceListViewModel
+import tw.bluehomewu.devicemonitor.ui.pairing.PairingInviteDialog
 import tw.bluehomewu.devicemonitor.ui.theme.DeviceMonitorTheme
 
 private enum class MainTab { MY_DEVICE, ALL_DEVICES }
@@ -114,11 +115,20 @@ class MainActivity : ComponentActivity() {
 
                         is AuthState.LoggedIn -> {
                             val displayName = (authState as AuthState.LoggedIn).displayName
+                            val userId = (authState as AuthState.LoggedIn).userId
                             val deviceVm: DeviceInfoViewModel = viewModel()
                             val listVm: DeviceListViewModel = viewModel(
                                 factory = DeviceListViewModel.factory()
                             )
                             var selectedTab by rememberSaveable { mutableStateOf(MainTab.MY_DEVICE) }
+                            var showPairingDialog by remember { mutableStateOf(false) }
+
+                            if (showPairingDialog) {
+                                PairingInviteDialog(
+                                    ownerUid = userId,
+                                    onDismiss = { showPairingDialog = false }
+                                )
+                            }
 
                             LaunchedEffect(Unit) {
                                 lifecycleScope.launch {
@@ -164,7 +174,8 @@ class MainActivity : ComponentActivity() {
                                     MainTab.ALL_DEVICES ->
                                         DeviceListScreen(
                                             modifier = Modifier.padding(innerPadding),
-                                            vm = listVm
+                                            vm = listVm,
+                                            onPairDevice = { showPairingDialog = true }
                                         )
                                 }
                             }

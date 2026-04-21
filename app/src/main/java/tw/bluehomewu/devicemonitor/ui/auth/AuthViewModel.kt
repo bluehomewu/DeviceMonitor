@@ -78,11 +78,34 @@ class AuthViewModel(
         }
     }
 
+    /**
+     * For no-GMS devices: anonymous Supabase sign-in → validate 4-digit code →
+     * link this anon UID to the inviter's owner_uid → store group UID locally.
+     */
+    fun joinWithCode(code: String) {
+        viewModelScope.launch {
+            _state.value = AuthState.Loading
+            runCatching {
+                supabase.auth.signInAnonymously()
+                val anonUid = supabase.auth.currentUserOrNull()?.id
+                    ?: error("無法取得匿名 UID")
+                val ownerUid = AppModule.pairingRepository.validateCode(code)
+                    ?: error("配對碼無效或已過期")
+                AppModule.pairingRepository.linkDevice(anonUid, ownerUid)
+                AppModule.groupUidManager.set(ownerUid)
+                _state.value = AuthState.LoggedIn(anonUid, "配對裝置")
+            }.onFailure { e ->
+                _state.value = AuthState.Error(e.message ?: "配對失敗")
+            }
+        }
+    }
+
     fun signOut() {
         viewModelScope.launch {
             runCatching { googleAuthManager.signOut() }
             AppModule.deviceStateHolder.clear()
             AppModule.sessionBackupManager.clearBackup()
+            AppModule.groupUidManager.clear()
             _state.value = AuthState.LoggedOut
         }
     }
