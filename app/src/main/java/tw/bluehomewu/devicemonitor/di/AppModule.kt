@@ -9,6 +9,7 @@ import io.github.jan.supabase.createSupabaseClient
 import io.github.jan.supabase.postgrest.Postgrest
 import io.github.jan.supabase.realtime.Realtime
 import tw.bluehomewu.devicemonitor.BuildConfig
+import tw.bluehomewu.devicemonitor.data.local.PinnedOrderManager
 import tw.bluehomewu.devicemonitor.data.memory.DeviceStateHolder
 import tw.bluehomewu.devicemonitor.data.remote.DeviceRepository
 import tw.bluehomewu.devicemonitor.data.remote.RealtimeRepository
@@ -56,6 +57,8 @@ object AppModule {
     val alertNotificationManager: AlertNotificationManager by lazy {
         AlertNotificationManager(_appContext, deviceStateHolder)
     }
+
+    val pinnedOrderManager: PinnedOrderManager by lazy { PinnedOrderManager(_appContext) }
 
     val realtimeRepository: RealtimeRepository by lazy {
         RealtimeRepository(supabase, deviceStateHolder, alertNotificationManager)
