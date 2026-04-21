@@ -1,21 +1,25 @@
-# Add project specific ProGuard rules here.
-# You can control the set of applied configuration files using the
-# proguardFiles setting in build.gradle.
-#
-# For more details, see
-#   http://developer.android.com/guide/developing/tools/proguard.html
+# ── Stack traces ──────────────────────────────────────────────────────────────
+-keepattributes SourceFile,LineNumberTable
+-renamesourcefileattribute SourceFile
 
-# If your project uses WebView with JS, uncomment the following
-# and specify the fully qualified class name to the JavaScript interface
-# class:
-#-keepclassmembers class fqcn.of.javascript.interface.for.webview {
-#   public *;
-#}
+# ── kotlinx.serialization ─────────────────────────────────────────────────────
+# Keep generated $$serializer companions for all @Serializable classes (including
+# private inner classes in UpdateChecker and PairingRepository).
+-keep,includedescriptorclasses class tw.bluehomewu.devicemonitor.**$$serializer { *; }
+-keepclassmembers @kotlinx.serialization.Serializable class tw.bluehomewu.devicemonitor.** {
+    *** Companion;
+    *** INSTANCE;
+    kotlinx.serialization.KSerializer serializer(...);
+}
+# Retain the @Serializable classes themselves so R8 doesn't inline / remove fields
+# referenced only via reflection by the serialization runtime.
+-keep @kotlinx.serialization.Serializable class tw.bluehomewu.devicemonitor.** { *; }
 
-# Uncomment this to preserve the line number information for
-# debugging stack traces.
-#-keepattributes SourceFile,LineNumberTable
+# ── OkHttp (Ktor engine) ──────────────────────────────────────────────────────
+# OkHttp 4.x bundles its own consumer rules; suppress residual warnings only.
+-dontwarn okhttp3.**
+-dontwarn okio.**
 
-# If you keep the line number information, uncomment this to
-# hide the original source file name.
-#-renamesourcefileattribute SourceFile
+# ── Google Credential Manager / Sign-In ───────────────────────────────────────
+-keep class com.google.android.libraries.identity.googleid.** { *; }
+-keep class androidx.credentials.** { *; }
