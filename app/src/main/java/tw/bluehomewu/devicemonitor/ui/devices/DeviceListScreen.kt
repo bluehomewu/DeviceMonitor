@@ -186,14 +186,16 @@ fun DeviceListScreen(
                 text = stringResource(R.string.device_list_title, devices.size),
                 style = MaterialTheme.typography.headlineMedium
             )
-            IconButton(onClick = onPairDevice) {
-                Icon(Icons.Default.Share, contentDescription = "配對裝置")
-            }
-            IconButton(onClick = { vm.refresh() }, enabled = !isRefreshing) {
-                if (isRefreshing) {
-                    CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
-                } else {
-                    Icon(Icons.Default.Refresh, contentDescription = stringResource(R.string.action_refresh))
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                IconButton(onClick = onPairDevice) {
+                    Icon(Icons.Default.Share, contentDescription = "配對裝置")
+                }
+                IconButton(onClick = { vm.refresh() }, enabled = !isRefreshing) {
+                    if (isRefreshing) {
+                        CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
+                    } else {
+                        Icon(Icons.Default.Refresh, contentDescription = stringResource(R.string.action_refresh))
+                    }
                 }
             }
         }
