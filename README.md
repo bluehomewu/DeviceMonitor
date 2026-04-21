@@ -1,95 +1,97 @@
-# 裝置監控精靈（Device Monitor）
+# Device Monitor
 
-即時監控多台 Android 手機的電量與網路狀態，電量低於閾值時自動通知主裝置。  
-無需自架伺服器，使用 Google 帳號登入即可直接使用。
+> [繁體中文](README_zhTW.md) | **English**
 
----
-
-## 功能
-
-- 即時顯示所有裝置的電量、充電狀態、網路類型（Wi-Fi / 4G / LTE / 5G NSA / 5G SA）
-- Wi-Fi 顯示 SSID，行動網路顯示電信商名稱
-- 低電量警報：電量低於閾值時，主裝置收到本地通知（充電中自動靜音，拔除充電後若仍低於閾值立即補發）
-- 主裝置設定：指定一台裝置作為接收警報的主裝置
-- 警報閾值可調整（10% 間隔，10–100%）
-- 裝置別名：為每台裝置設定自訂顯示名稱
-- **置頂裝置**：本機永遠排第一；可右滑其他裝置卡片置頂，置頂裝置支援長按拖曳排序
-- 背景持續監控，即使螢幕關閉也能持續上傳狀態
+Monitor battery level and network status across multiple Android devices in real time. Automatically notifies the designated master device when battery drops below a configurable threshold.  
+No self-hosted server required — just sign in with a Google account and start monitoring.
 
 ---
 
-## 安裝需求
+## Features
 
-- Android 10（API 29）以上
-- Google 帳號
-- 允許「安裝未知來源應用程式」（側載 APK）
-
----
-
-## 安裝步驟
-
-1. 下載最新 `app-release.apk`
-2. 在手機上開啟 APK 並安裝
-3. 啟動 App → 點擊「透過 Google 登入」
-4. 登入後點擊「啟動監控服務」
-
-每台要監控的手機都重複以上步驟，使用**同一個 Google 帳號**登入。
+- Real-time display of battery level, charging state, and network type (Wi-Fi / 4G / LTE / 5G NSA / 5G SA) for all devices
+- Wi-Fi shows SSID; mobile network shows carrier name
+- Low-battery alerts: master device receives a local notification when a device drops below the threshold (silenced while charging; alert fires immediately once charging stops if still below threshold)
+- Master device setting: designate one device to receive all alerts
+- Adjustable alert threshold (10% steps, 10–100%)
+- Device alias: set a custom display name for each device
+- **Pinned devices**: your own device is always at the top; swipe right on any card to pin it; pinned devices support long-press drag-to-reorder
+- Continuous background monitoring — uploads status even when the screen is off
 
 ---
 
-## 設定主裝置
+## Requirements
 
-接收低電量警報的手機需要設定為主裝置：
-
-1. 開啟 App → 「我的裝置」頁籤
-2. 開啟「主裝置」開關
-
-同一帳號下只能有一台主裝置。
+- Android 10 (API 29) or higher
+- Google account
+- "Install unknown apps" permission enabled (for sideloading the APK)
 
 ---
 
-## 監控清單操作
+## Installation
 
-| 操作 | 說明 |
+1. Download the latest `app-release.apk`
+2. Open the APK on your phone and install it
+3. Launch the app → tap **Sign in with Google**
+4. After signing in, tap **Start Monitor Service**
+
+Repeat on every device you want to monitor, signing in with the **same Google account**.
+
+---
+
+## Setting the Master Device
+
+The device that should receive low-battery alerts must be set as the master device:
+
+1. Open the app → **My Device** tab
+2. Enable the **Master Device** toggle
+
+Only one master device is allowed per account.
+
+---
+
+## Device List Operations
+
+| Action | Description |
 |---|---|
-| 右滑裝置卡片 | 顯示大頭針，點擊置頂 / 取消置頂 |
-| 長按置頂裝置的拖曳把手 | 垂直拖動調整置頂順序 |
-| 點擊卡片 | 展開 / 收合詳細資訊 |
-| 點擊鉛筆圖示 | 設定裝置別名 |
+| Swipe right on a card | Reveal the pin button — tap to pin / unpin |
+| Long-press the drag handle on a pinned card | Drag vertically to reorder pinned devices |
+| Tap a card | Expand / collapse device details |
+| Tap the pencil icon | Set a device alias |
 
-本機裝置永遠固定在清單最頂端，無法被其他裝置超過。
-
----
-
-## 建議設定（提升背景存活率）
-
-進入手機**設定 → 應用程式 → 裝置監控精靈**，建議：
-
-| 設定項目 | 建議值 |
-|---|---|
-| 電池最佳化 | 不限制 / 無限制 |
-| 背景活動 | 允許 |
-| 裝置管理員 | 啟用（可防止 App 被意外移除） |
+Your own device is always fixed at the very top of the list and cannot be displaced.
 
 ---
 
-## 技術架構
+## Recommended Settings (for better background survival)
 
-| 項目 | 採用技術 |
+Go to **Settings → Apps → Device Monitor** on each phone and apply:
+
+| Setting | Recommended value |
 |---|---|
-| 語言 | Kotlin |
+| Battery optimization | Unrestricted |
+| Background activity | Allow |
+| Device admin | Enable (prevents accidental uninstall) |
+
+---
+
+## Tech Stack
+
+| Item | Technology |
+|---|---|
+| Language | Kotlin |
 | UI | Jetpack Compose |
-| 後端 | Supabase（Postgres + Realtime + Auth）|
-| 身份驗證 | Google Sign-In → Supabase Google OAuth |
-| 背景保活 | Foreground Service + WorkManager + AlarmManager |
-| 本地快取 | SharedPreferences（取代 Room，無需 KSP）|
-| 置頂排序 | SharedPreferences（PinnedOrderManager）|
-| 最低 SDK | API 29（Android 10） |
+| Backend | Supabase (Postgres + Realtime + Auth) |
+| Authentication | Google Sign-In → Supabase Google OAuth |
+| Background keep-alive | Foreground Service + WorkManager + AlarmManager |
+| Local storage | SharedPreferences (replaces Room; no KSP required) |
+| Pin ordering | SharedPreferences (PinnedOrderManager) |
+| Min SDK | API 29 (Android 10) |
 
 ---
 
-## 隱私說明
+## Privacy
 
-- 所有裝置資料儲存於 Supabase，並透過 Google 帳號 UID 隔離
-- 不同帳號的資料彼此完全獨立，無法互相存取
-- 不收集任何個人身份識別資訊以外的資料
+- All device data is stored in Supabase and isolated by Google account UID
+- Data from different accounts is completely separate and mutually inaccessible
+- No personally identifiable information beyond what is required for authentication is collected
