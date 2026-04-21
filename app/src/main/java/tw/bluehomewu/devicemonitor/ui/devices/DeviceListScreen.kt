@@ -4,6 +4,7 @@ import android.text.format.DateUtils
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -12,11 +13,13 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.itemsIndexed
@@ -493,6 +496,9 @@ private fun DeviceCard(
                         Text(text = "${device.batteryLevel}%", style = MaterialTheme.typography.bodySmall)
                         Text(text = "·", style = MaterialTheme.typography.bodySmall, color = LocalContentColor.current.copy(alpha = 0.5f))
                         Text(text = buildNetworkLabel(device), style = MaterialTheme.typography.bodySmall)
+                        device.signalLevel?.let { level ->
+                            SignalBarsIcon(level = level, modifier = Modifier.height(13.dp))
+                        }
                     }
                 }
 
@@ -587,6 +593,29 @@ private fun DeviceCard(
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
+
+@Composable
+private fun SignalBarsIcon(level: Int, modifier: Modifier = Modifier) {
+    Row(
+        modifier = modifier,
+        horizontalArrangement = Arrangement.spacedBy(1.5.dp),
+        verticalAlignment = Alignment.Bottom
+    ) {
+        repeat(4) { index ->
+            val filled = index < level
+            Box(
+                modifier = Modifier
+                    .width(3.dp)
+                    .height((5 + index * 3).dp)
+                    .background(
+                        color = if (filled) LocalContentColor.current
+                                else LocalContentColor.current.copy(alpha = 0.2f),
+                        shape = RoundedCornerShape(1.dp)
+                    )
+            )
+        }
+    }
+}
 
 @Composable
 private fun DetailRow(label: String, value: String?) {

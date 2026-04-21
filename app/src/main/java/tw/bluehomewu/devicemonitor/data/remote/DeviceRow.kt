@@ -31,5 +31,8 @@ data class DeviceRow(
     // Postgres DEFAULT now() only fires on INSERT; without this field, upsert
     // conflict-updates leave updated_at stale, triggering false "timed out" status.
     @SerialName("updated_at")       val updatedAt: String,
-    @SerialName("app_version")      val appVersion: String?
+    @SerialName("app_version")      val appVersion: String?,
+    // No default value: ensures null is always serialized so the column is cleared
+    // when switching between Wi-Fi and cellular (same pattern as wifi_ssid / carrier_name).
+    @SerialName("signal_level")     val signalLevel: Int?
 )

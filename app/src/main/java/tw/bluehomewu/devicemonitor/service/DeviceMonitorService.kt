@@ -303,7 +303,8 @@ class DeviceMonitorService : Service() {
                     isCharging = battery.isCharging,
                     networkType = network.networkType,
                     wifiSsid = network.wifiSsid,
-                    carrierName = network.carrierName
+                    carrierName = network.carrierName,
+                    signalLevel = network.signalLevel
                 )
             }.collect { info ->
                 latestInfo = info

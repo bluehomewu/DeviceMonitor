@@ -5,5 +5,6 @@ data class DeviceInfo(
     val isCharging: Boolean = false,
     val networkType: String = "未知",
     val wifiSsid: String? = null,
-    val carrierName: String? = null
+    val carrierName: String? = null,
+    val signalLevel: Int? = null
 )

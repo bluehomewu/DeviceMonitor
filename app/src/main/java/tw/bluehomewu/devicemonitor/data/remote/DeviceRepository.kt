@@ -29,7 +29,8 @@ class DeviceRepository(private val supabase: SupabaseClient) {
             buildNumber = Build.DISPLAY,
             simOperator = simOperator,
             updatedAt = OffsetDateTime.now(ZoneOffset.UTC).toString(),
-            appVersion = BuildConfig.VERSION_NAME
+            appVersion = BuildConfig.VERSION_NAME,
+            signalLevel = info.signalLevel
         )
         supabase.from("devices").upsert(row) {
             onConflict = "owner_uid,device_name"

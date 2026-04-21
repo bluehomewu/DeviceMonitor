@@ -10,6 +10,7 @@ import android.net.NetworkRequest
 import android.net.wifi.WifiManager
 import android.os.Build
 import android.telephony.PhoneStateListener
+import android.telephony.SignalStrength
 import android.telephony.TelephonyDisplayInfo
 import android.telephony.TelephonyManager
 import androidx.annotation.RequiresApi
@@ -23,7 +24,8 @@ import kotlinx.coroutines.withContext
 data class NetworkInfo(
     val networkType: String,
     val wifiSsid: String?,
-    val carrierName: String?
+    val carrierName: String?,
+    val signalLevel: Int?   // 0–4 bars; null = unknown / not applicable
 )
 
 class NetworkCollector(private val context: Context) {
@@ -50,6 +52,8 @@ class NetworkCollector(private val context: Context) {
 
         // TelephonyDisplayInfo is API 30+; kept as Any? so the field itself has no API-level requirement
         var latestDisplayInfo: Any? = null
+        // SignalStrength is available API 23+; kept as Any? for symmetry with latestDisplayInfo
+        var latestSignalStrength: Any? = null
 
         fun hasPermission(perm: String) =
             ContextCompat.checkSelfPermission(context, perm) == PackageManager.PERMISSION_GRANTED
@@ -59,7 +63,7 @@ class NetworkCollector(private val context: Context) {
             val caps = cm.getNetworkCapabilities(active)
 
             return when {
-                caps == null -> NetworkInfo("無連線", null, null)
+                caps == null -> NetworkInfo("無連線", null, null, null)
 
                 caps.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) -> {
                     val ssid = if (hasPermission(Manifest.permission.ACCESS_FINE_LOCATION)) {
@@ -76,16 +80,29 @@ class NetworkCollector(private val context: Context) {
                             lastKnownSsid
                         }
                     } else null
-                    NetworkInfo("Wi-Fi", ssid, null)
+
+                    @Suppress("DEPRECATION")
+                    val rssi = wm.connectionInfo?.rssi ?: Int.MIN_VALUE
+                    val wifiSignalLevel: Int? = if (rssi != Int.MIN_VALUE && rssi < 0) {
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                            wm.calculateSignalLevel(rssi)
+                        } else {
+                            @Suppress("DEPRECATION")
+                            WifiManager.calculateSignalLevel(rssi, 5)
+                        }
+                    } else null
+
+                    NetworkInfo("Wi-Fi", ssid, null, wifiSignalLevel)
                 }
 
                 caps.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR) -> {
                     val type = determineCellularType(tm, latestDisplayInfo)
                     val carrier = tm.networkOperatorName.takeIf { it.isNotEmpty() }
-                    NetworkInfo(type, null, carrier)
+                    val cellSignalLevel = (latestSignalStrength as? SignalStrength)?.level
+                    NetworkInfo(type, null, carrier, cellSignalLevel)
                 }
 
-                else -> NetworkInfo("其他", null, null)
+                else -> NetworkInfo("其他", null, null, null)
             }
         }
 
@@ -113,16 +130,28 @@ class NetworkCollector(private val context: Context) {
                     latestDisplayInfo = telephonyDisplayInfo
                     trySend(currentNetworkInfo())
                 }
+
+                @Suppress("DEPRECATION")
+                override fun onSignalStrengthsChanged(signalStrength: SignalStrength) {
+                    latestSignalStrength = signalStrength
+                    trySend(currentNetworkInfo())
+                }
             }
         }
 
-        // LISTEN_DISPLAY_INFO_CHANGED is API 30+; on API 29 we fall back to tm.dataNetworkType
-        if (hasPermission(Manifest.permission.READ_PHONE_STATE) &&
-            Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-            withContext(Dispatchers.Main) {
+        // LISTEN_SIGNAL_STRENGTHS works on all supported API levels.
+        // LISTEN_DISPLAY_INFO_CHANGED is API 30+ and requires READ_PHONE_STATE.
+        @Suppress("DEPRECATION")
+        val listenFlags = PhoneStateListener.LISTEN_SIGNAL_STRENGTHS or
+            if (hasPermission(Manifest.permission.READ_PHONE_STATE) &&
+                Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
                 @Suppress("DEPRECATION")
-                tm.listen(phoneStateListener, PhoneStateListener.LISTEN_DISPLAY_INFO_CHANGED)
-            }
+                PhoneStateListener.LISTEN_DISPLAY_INFO_CHANGED
+            } else 0
+
+        withContext(Dispatchers.Main) {
+            @Suppress("DEPRECATION")
+            tm.listen(phoneStateListener, listenFlags)
         }
 
         // Emit initial state
