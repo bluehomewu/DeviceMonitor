@@ -23,3 +23,10 @@
 # ── Google Credential Manager / Sign-In ───────────────────────────────────────
 -keep class com.google.android.libraries.identity.googleid.** { *; }
 -keep class androidx.credentials.** { *; }
+
+# ── WorkManager ───────────────────────────────────────────────────────────────
+# WorkManager instantiates WorkDatabase and Worker subclasses by canonical name
+# via reflection; R8 must not rename or remove them.
+-keep class androidx.work.impl.** { *; }
+-keep class * extends androidx.work.Worker { *; }
+-keep class * extends androidx.work.ListenableWorker { *; }
