@@ -18,6 +18,8 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.lazy.LazyColumn
@@ -483,28 +485,43 @@ private fun DeviceCard(
                         )
                     }
 
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    @OptIn(ExperimentalLayoutApi::class)
+                    FlowRow(
+                        horizontalArrangement = Arrangement.spacedBy(6.dp),
+                        verticalArrangement = Arrangement.spacedBy(2.dp),
                         modifier = Modifier.padding(top = 4.dp)
                     ) {
-                        Icon(
-                            imageVector = if (device.isCharging) Icons.Default.BatteryChargingFull else Icons.Default.BatteryFull,
-                            contentDescription = null,
-                            modifier = Modifier.size(16.dp)
-                        )
-                        Text(text = "${device.batteryLevel}%", style = MaterialTheme.typography.bodySmall)
+                        // Battery icon + level — kept together as one non-breaking unit
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(4.dp)
+                        ) {
+                            Icon(
+                                imageVector = if (device.isCharging) Icons.Default.BatteryChargingFull else Icons.Default.BatteryFull,
+                                contentDescription = null,
+                                modifier = Modifier.size(16.dp)
+                            )
+                            Text(text = "${device.batteryLevel}%", style = MaterialTheme.typography.bodySmall)
+                        }
                         Text(text = "·", style = MaterialTheme.typography.bodySmall, color = LocalContentColor.current.copy(alpha = 0.5f))
                         Text(text = buildNetworkLabel(device), style = MaterialTheme.typography.bodySmall)
-                        device.signalLevel?.let { level ->
-                            SignalBarsIcon(level = level, modifier = Modifier.height(13.dp))
-                        }
-                        device.signalDbm?.let { dbm ->
-                            Text(
-                                text = "$dbm dBm",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = LocalContentColor.current.copy(alpha = 0.7f)
-                            )
+                        // Signal bars + dBm — kept together so they never split across lines
+                        if (device.signalLevel != null || device.signalDbm != null) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(4.dp)
+                            ) {
+                                device.signalLevel?.let { level ->
+                                    SignalBarsIcon(level = level, modifier = Modifier.height(13.dp))
+                                }
+                                device.signalDbm?.let { dbm ->
+                                    Text(
+                                        text = "$dbm dBm",
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = LocalContentColor.current.copy(alpha = 0.7f)
+                                    )
+                                }
+                            }
                         }
                     }
                 }
