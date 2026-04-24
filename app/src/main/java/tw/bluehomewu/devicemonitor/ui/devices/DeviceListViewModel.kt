@@ -46,6 +46,7 @@ class DeviceListViewModel(
     }
 
     val currentDeviceId: String = AppModule.thisDeviceId
+    val isDeleteDeviceEnabled: StateFlow<Boolean> = AppModule.isDeleteDeviceEnabled
 
     /** Ordered list of pinned device IDs (excludes current device). */
     private val _pinnedIds = MutableStateFlow(pinnedOrderManager.load())
@@ -113,6 +114,16 @@ class DeviceListViewModel(
             runCatching {
                 deviceRepository.setAlias(deviceId, trimmed)
             }.onFailure { Log.e(TAG, "setAlias failed", it) }
+        }
+    }
+
+    fun deleteDevice(deviceId: String) {
+        viewModelScope.launch {
+            runCatching {
+                deviceRepository.deleteDevice(deviceId)
+                deviceStateHolder.removeById(deviceId)
+                AppModule.setDeleteDeviceEnabled(false)
+            }.onFailure { Log.e(TAG, "deleteDevice failed", it) }
         }
     }
 

@@ -52,6 +52,15 @@
     <string name="label_language_settings">Per-App Language Settings</string>
     <string name="label_language_not_supported">Requires Android 13+</string>
 
+    <!-- Delete device section -->
+    <string name="section_delete_device">Delete Device</string>
+    <string name="delete_device_description">When enabled, a delete button appears on each device card in the list. The toggle auto-disables after each deletion.</string>
+    <string name="delete_device_enabled">Delete mode enabled</string>
+    <string name="delete_device_disabled">Delete mode disabled</string>
+    <string name="action_delete">Delete</string>
+    <string name="delete_device_confirm_title">Delete Device?</string>
+    <string name="delete_device_confirm_text">"%s" will be permanently removed from the database.</string>
+
     <!-- Beta update section -->
     <string name="section_beta_update">Beta Updates</string>
     <string name="beta_update_description">When enabled, checks for beta releases (tagged with -beta) instead of stable releases only.</string>

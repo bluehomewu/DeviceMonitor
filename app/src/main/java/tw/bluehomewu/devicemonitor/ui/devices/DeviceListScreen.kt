@@ -36,6 +36,7 @@ import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.ExpandLess
 import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material.icons.filled.PhoneAndroid
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.PushPin
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Share
@@ -164,6 +165,7 @@ fun DeviceListScreen(
     val dragState = remember(listState) { DragDropState(listState) }
 
     // Device subsets
+    val isDeleteEnabled by vm.isDeleteDeviceEnabled.collectAsStateWithLifecycle()
     val currentDevice = devices.find { it.deviceId == vm.currentDeviceId }
     val pinnedDevices = pinnedIds.mapNotNull { id -> devices.find { it.id == id } }
     val unpinnedDevices = devices.filter {
@@ -178,6 +180,29 @@ fun DeviceListScreen(
 
     // Track which card is currently swiped open (auto-close others)
     var swipedOpenId by remember { mutableStateOf<String?>(null) }
+
+    // Delete confirmation dialog
+    var deletePendingDevice by remember { mutableStateOf<DeviceRecord?>(null) }
+    deletePendingDevice?.let { dev ->
+        AlertDialog(
+            onDismissRequest = { deletePendingDevice = null },
+            title = { Text(stringResource(R.string.delete_device_confirm_title)) },
+            text = { Text(stringResource(R.string.delete_device_confirm_text, dev.alias ?: dev.deviceName)) },
+            confirmButton = {
+                TextButton(
+                    onClick = { vm.deleteDevice(dev.id); deletePendingDevice = null },
+                    colors = androidx.compose.material3.ButtonDefaults.textButtonColors(
+                        contentColor = MaterialTheme.colorScheme.error
+                    )
+                ) { Text(stringResource(R.string.action_delete)) }
+            },
+            dismissButton = {
+                TextButton(onClick = { deletePendingDevice = null }) {
+                    Text(stringResource(R.string.action_cancel))
+                }
+            }
+        )
+    }
 
     Column(modifier = modifier.fillMaxSize()) {
         Row(
@@ -258,6 +283,18 @@ fun DeviceListScreen(
                                 )
                             }
                         },
+                        deleteAction = if (isDeleteEnabled) ({
+                            IconButton(onClick = {
+                                deletePendingDevice = dev
+                                swipedOpenId = null
+                            }) {
+                                Icon(
+                                    imageVector = Icons.Default.Delete,
+                                    contentDescription = "刪除裝置",
+                                    tint = MaterialTheme.colorScheme.error
+                                )
+                            }
+                        }) else null,
                         modifier = Modifier
                             .zIndex(if (isDragging) 1f else 0f)
                             .graphicsLayer {
@@ -299,7 +336,19 @@ fun DeviceListScreen(
                                     tint = MaterialTheme.colorScheme.primary
                                 )
                             }
-                        }
+                        },
+                        deleteAction = if (isDeleteEnabled) ({
+                            IconButton(onClick = {
+                                deletePendingDevice = dev
+                                swipedOpenId = null
+                            }) {
+                                Icon(
+                                    imageVector = Icons.Default.Delete,
+                                    contentDescription = "刪除裝置",
+                                    tint = MaterialTheme.colorScheme.error
+                                )
+                            }
+                        }) else null
                     ) {
                         DeviceCard(
                             device = dev,
@@ -329,12 +378,15 @@ private fun SwipeRevealCard(
     onOpen: () -> Unit,
     onClose: () -> Unit,
     pinAction: @Composable () -> Unit,
+    deleteAction: (@Composable () -> Unit)? = null,
     modifier: Modifier = Modifier,
     content: @Composable () -> Unit
 ) {
     val scope = rememberCoroutineScope()
-    val revealPx = with(androidx.compose.ui.platform.LocalDensity.current) { REVEAL_WIDTH.toPx() }
-    val offsetX = remember { androidx.compose.animation.core.Animatable(0f) }
+    val revealWidth = if (deleteAction != null) REVEAL_WIDTH * 2 else REVEAL_WIDTH
+    val revealPx = with(androidx.compose.ui.platform.LocalDensity.current) { revealWidth.toPx() }
+    // Reset animation offset when reveal width changes (delete mode toggled)
+    val offsetX = remember(deleteAction != null) { androidx.compose.animation.core.Animatable(0f) }
 
     // Sync open/close state from parent
     androidx.compose.runtime.LaunchedEffect(isOpen) {
@@ -342,19 +394,29 @@ private fun SwipeRevealCard(
     }
 
     Box(modifier = modifier) {
-        // Pin action revealed on the left
-        Box(
+        // Actions revealed on the left (pin + optional delete)
+        androidx.compose.foundation.layout.Row(
             modifier = Modifier
                 .align(Alignment.CenterStart)
-                .size(REVEAL_WIDTH),
-            contentAlignment = Alignment.Center
-        ) { pinAction() }
+                .width(revealWidth)
+        ) {
+            Box(
+                modifier = Modifier.size(REVEAL_WIDTH),
+                contentAlignment = Alignment.Center
+            ) { pinAction() }
+            deleteAction?.let { action ->
+                Box(
+                    modifier = Modifier.size(REVEAL_WIDTH),
+                    contentAlignment = Alignment.Center
+                ) { action() }
+            }
+        }
 
         // Swipeable card layer
         Box(
             modifier = Modifier
                 .offset { IntOffset(offsetX.value.roundToInt(), 0) }
-                .pointerInput(Unit) {
+                .pointerInput(revealPx) {
                     detectHorizontalDragGestures(
                         onDragEnd = {
                             scope.launch {

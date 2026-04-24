@@ -52,6 +52,15 @@
     <string name="label_language_settings">個別應用程式語言設定</string>
     <string name="label_language_not_supported">需要 Android 13 以上</string>
 
+    <!-- Delete device section -->
+    <string name="section_delete_device">刪除裝置</string>
+    <string name="delete_device_description">開啟後，監控清單每張裝置卡片的右滑選單會出現刪除按鈕。每次刪除完成後開關會自動關閉。</string>
+    <string name="delete_device_enabled">刪除模式已開啟</string>
+    <string name="delete_device_disabled">刪除模式已關閉</string>
+    <string name="action_delete">刪除</string>
+    <string name="delete_device_confirm_title">刪除裝置？</string>
+    <string name="delete_device_confirm_text">「%s」將從資料庫中永久移除。</string>
+
     <!-- Beta update section -->
     <string name="section_beta_update">Beta 更新</string>
     <string name="beta_update_description">啟用後將偵測帶有 -beta 字樣的測試版本，而非僅追蹤正式版本。</string>

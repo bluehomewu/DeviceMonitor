@@ -87,6 +87,13 @@ class DeviceRepository(private val supabase: SupabaseClient) {
         }
     }
 
+    /** 從 Supabase 永久刪除指定裝置。 */
+    suspend fun deleteDevice(deviceId: String) {
+        supabase.from("devices").delete {
+            filter { eq("id", deviceId) }
+        }
+    }
+
     /** 更新指定裝置的低電量警報閾值（10% 間隔，10–100）。 */
     suspend fun setAlertThreshold(deviceId: String, threshold: Int) {
         supabase.from("devices").update(

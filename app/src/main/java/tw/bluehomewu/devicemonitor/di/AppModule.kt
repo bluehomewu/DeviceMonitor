@@ -47,6 +47,18 @@ object AppModule {
         Settings.Secure.getString(_appContext.contentResolver, Settings.Secure.ANDROID_ID)
     }
 
+    /** 允許刪除裝置開關——由 UI 層讀寫，刪除完成後自動關閉。 */
+    val isDeleteDeviceEnabled: MutableStateFlow<Boolean> by lazy {
+        val prefs = _appContext.getSharedPreferences("app_prefs", Context.MODE_PRIVATE)
+        MutableStateFlow(prefs.getBoolean("allow_delete_device", false))
+    }
+
+    fun setDeleteDeviceEnabled(enabled: Boolean) {
+        isDeleteDeviceEnabled.value = enabled
+        _appContext.getSharedPreferences("app_prefs", Context.MODE_PRIVATE)
+            .edit().putBoolean("allow_delete_device", enabled).apply()
+    }
+
     /** 記憶體中的裝置狀態快取（取代 Room）。SharedPreferences 用於跨 process 重啟的持久化。 */
     val deviceStateHolder: DeviceStateHolder by lazy {
         DeviceStateHolder(_appContext.getSharedPreferences("app_prefs", Context.MODE_PRIVATE))

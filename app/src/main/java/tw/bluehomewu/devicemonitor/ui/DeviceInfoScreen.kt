@@ -84,6 +84,7 @@ fun DeviceInfoScreen(
     val isPowerOptimizationIgnored by vm.isPowerOptimizationIgnored.collectAsStateWithLifecycle()
     val releaseDialog by vm.releaseDialog.collectAsStateWithLifecycle()
     val isBetaEnabled by vm.isBetaEnabled.collectAsStateWithLifecycle()
+    val isDeleteDeviceEnabled by vm.isDeleteDeviceEnabled.collectAsStateWithLifecycle()
     val context = LocalContext.current
     val uriHandler = LocalUriHandler.current
 
@@ -356,6 +357,37 @@ fun DeviceInfoScreen(
                     Switch(
                         checked = isBetaEnabled,
                         onCheckedChange = { vm.setBetaEnabled(it) }
+                    )
+                }
+            }
+        }
+
+        // ── 刪除裝置 ──────────────────────────────────────────────
+        Card(modifier = Modifier.fillMaxWidth()) {
+            Column(modifier = Modifier.padding(16.dp)) {
+                Text(stringResource(R.string.section_delete_device), style = MaterialTheme.typography.titleMedium)
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = stringResource(R.string.delete_device_description),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = if (isDeleteDeviceEnabled) stringResource(R.string.delete_device_enabled)
+                               else stringResource(R.string.delete_device_disabled),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = if (isDeleteDeviceEnabled) MaterialTheme.colorScheme.error
+                                else MaterialTheme.colorScheme.onSurface
+                    )
+                    Switch(
+                        checked = isDeleteDeviceEnabled,
+                        onCheckedChange = { vm.setDeleteDeviceEnabled(it) }
                     )
                 }
             }

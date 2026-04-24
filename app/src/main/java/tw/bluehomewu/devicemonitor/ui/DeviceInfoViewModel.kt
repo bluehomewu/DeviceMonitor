@@ -71,6 +71,12 @@ class DeviceInfoViewModel(application: Application) : AndroidViewModel(applicati
 
     private var downloadJob: Job? = null
 
+    val isDeleteDeviceEnabled: StateFlow<Boolean> = AppModule.isDeleteDeviceEnabled
+
+    fun setDeleteDeviceEnabled(enabled: Boolean) {
+        AppModule.setDeleteDeviceEnabled(enabled)
+    }
+
     private val _isBetaEnabled = MutableStateFlow(prefs.getBoolean("beta_enabled", false))
     val isBetaEnabled: StateFlow<Boolean> = _isBetaEnabled.asStateFlow()
 
