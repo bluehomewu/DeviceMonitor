@@ -71,20 +71,6 @@ class DeviceInfoViewModel(application: Application) : AndroidViewModel(applicati
 
     private var downloadJob: Job? = null
 
-    val isDeleteDeviceEnabled: StateFlow<Boolean> = AppModule.isDeleteDeviceEnabled
-
-    fun setDeleteDeviceEnabled(enabled: Boolean) {
-        AppModule.setDeleteDeviceEnabled(enabled)
-    }
-
-    private val _isBetaEnabled = MutableStateFlow(prefs.getBoolean("beta_enabled", false))
-    val isBetaEnabled: StateFlow<Boolean> = _isBetaEnabled.asStateFlow()
-
-    fun setBetaEnabled(enabled: Boolean) {
-        _isBetaEnabled.value = enabled
-        prefs.edit().putBoolean("beta_enabled", enabled).apply()
-    }
-
     init {
         // App 啟動時靜默檢查是否有新版本
         viewModelScope.launch {
@@ -193,6 +179,22 @@ class DeviceInfoViewModel(application: Application) : AndroidViewModel(applicati
 
     // ── 裝置資訊 ──────────────────────────────────────────────────────
     private val prefs = application.getSharedPreferences("app_prefs", Context.MODE_PRIVATE)
+
+    // ── 設定項（prefs 必須先初始化）─────────────────────────────────────
+    val isDeleteDeviceEnabled: StateFlow<Boolean> = AppModule.isDeleteDeviceEnabled
+
+    fun setDeleteDeviceEnabled(enabled: Boolean) {
+        AppModule.setDeleteDeviceEnabled(enabled)
+    }
+
+    private val _isBetaEnabled = MutableStateFlow(prefs.getBoolean("beta_enabled", false))
+    val isBetaEnabled: StateFlow<Boolean> = _isBetaEnabled.asStateFlow()
+
+    fun setBetaEnabled(enabled: Boolean) {
+        _isBetaEnabled.value = enabled
+        prefs.edit().putBoolean("beta_enabled", enabled).apply()
+    }
+
     private val pm = application.getSystemService(Application.POWER_SERVICE) as PowerManager
 
     private val batteryCollector = BatteryCollector(application)
