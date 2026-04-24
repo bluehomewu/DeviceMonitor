@@ -44,6 +44,7 @@ import androidx.compose.material.icons.outlined.PushPin
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -160,6 +161,7 @@ fun DeviceListScreen(
     val devices by vm.devices.collectAsStateWithLifecycle()
     val pinnedIds by vm.pinnedIds.collectAsStateWithLifecycle()
     val isRefreshing by vm.isRefreshing.collectAsStateWithLifecycle()
+    val selectedIds by vm.selectedIds.collectAsStateWithLifecycle()
 
     val listState = rememberLazyListState()
     val dragState = remember(listState) { DragDropState(listState) }
@@ -181,8 +183,9 @@ fun DeviceListScreen(
     // Track which card is currently swiped open (auto-close others)
     var swipedOpenId by remember { mutableStateOf<String?>(null) }
 
-    // Delete confirmation dialog
+    // Delete confirmation dialogs
     var deletePendingDevice by remember { mutableStateOf<DeviceRecord?>(null) }
+    var showBatchDeleteDialog by remember { mutableStateOf(false) }
     deletePendingDevice?.let { dev ->
         AlertDialog(
             onDismissRequest = { deletePendingDevice = null },
@@ -203,6 +206,26 @@ fun DeviceListScreen(
             }
         )
     }
+    if (showBatchDeleteDialog) {
+        AlertDialog(
+            onDismissRequest = { showBatchDeleteDialog = false },
+            title = { Text(stringResource(R.string.delete_selected_title)) },
+            text = { Text(stringResource(R.string.delete_selected_text, selectedIds.size)) },
+            confirmButton = {
+                TextButton(
+                    onClick = { vm.deleteSelected(); showBatchDeleteDialog = false },
+                    colors = androidx.compose.material3.ButtonDefaults.textButtonColors(
+                        contentColor = MaterialTheme.colorScheme.error
+                    )
+                ) { Text(stringResource(R.string.action_delete)) }
+            },
+            dismissButton = {
+                TextButton(onClick = { showBatchDeleteDialog = false }) {
+                    Text(stringResource(R.string.action_cancel))
+                }
+            }
+        )
+    }
 
     Column(modifier = modifier.fillMaxSize()) {
         Row(
@@ -217,6 +240,16 @@ fun DeviceListScreen(
                 style = MaterialTheme.typography.headlineMedium
             )
             Row(verticalAlignment = Alignment.CenterVertically) {
+                if (isDeleteEnabled && selectedIds.isNotEmpty()) {
+                    TextButton(
+                        onClick = { showBatchDeleteDialog = true },
+                        colors = androidx.compose.material3.ButtonDefaults.textButtonColors(
+                            contentColor = MaterialTheme.colorScheme.error
+                        )
+                    ) {
+                        Text(stringResource(R.string.delete_selected_button, selectedIds.size))
+                    }
+                }
                 IconButton(onClick = onPairDevice) {
                     Icon(Icons.Default.Share, contentDescription = "配對裝置")
                 }
@@ -307,6 +340,9 @@ fun DeviceListScreen(
                             isPinned = true,
                             showPinAction = false,
                             showDragHandle = true,
+                            isSelectMode = isDeleteEnabled,
+                            isSelected = dev.id in selectedIds,
+                            onSelectToggle = { vm.toggleSelect(dev.id) },
                             onDragStart = { dragState.startDrag(globalIndex) },
                             onDrag = { dy -> dragState.onDrag(dy) { f, t -> vm.reorderPinned(f, t) } },
                             onDragEnd = { dragState.stopDrag() },
@@ -356,6 +392,9 @@ fun DeviceListScreen(
                             isPinned = false,
                             showPinAction = false,
                             showDragHandle = false,
+                            isSelectMode = isDeleteEnabled,
+                            isSelected = dev.id in selectedIds,
+                            onSelectToggle = { vm.toggleSelect(dev.id) },
                             onThresholdChange = { vm.setAlertThreshold(dev.id, it) },
                             onAliasChange = { vm.setAlias(dev.id, it) },
                             onPinToggle = { vm.togglePin(dev.id) }
@@ -456,6 +495,9 @@ private fun DeviceCard(
     isPinned: Boolean,
     showPinAction: Boolean,
     showDragHandle: Boolean,
+    isSelectMode: Boolean = false,
+    isSelected: Boolean = false,
+    onSelectToggle: () -> Unit = {},
     onThresholdChange: (Int) -> Unit,
     onAliasChange: (String) -> Unit,
     onPinToggle: () -> Unit,
@@ -493,11 +535,19 @@ private fun DeviceCard(
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable { expanded = !expanded },
+            .clickable { if (isSelectMode && !isCurrentDevice) onSelectToggle() else expanded = !expanded },
         colors = CardDefaults.cardColors(containerColor = containerColor, contentColor = contentColor)
     ) {
         Column(modifier = Modifier.padding(12.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
+                if (isSelectMode && !isCurrentDevice) {
+                    Checkbox(
+                        checked = isSelected,
+                        onCheckedChange = { onSelectToggle() },
+                        modifier = Modifier.size(24.dp)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                }
                 Icon(
                     imageVector = Icons.Default.PhoneAndroid,
                     contentDescription = null,

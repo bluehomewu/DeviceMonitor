@@ -60,6 +60,9 @@
     <string name="action_delete">Delete</string>
     <string name="delete_device_confirm_title">Delete Device?</string>
     <string name="delete_device_confirm_text">"%s" will be permanently removed from the database.</string>
+    <string name="delete_selected_title">Delete Selected Devices?</string>
+    <string name="delete_selected_text">%d selected devices will be permanently removed from the database.</string>
+    <string name="delete_selected_button">Delete (%d)</string>
 
     <!-- Beta update section -->
     <string name="section_beta_update">Beta Updates</string>

@@ -60,6 +60,9 @@
     <string name="action_delete">刪除</string>
     <string name="delete_device_confirm_title">刪除裝置？</string>
     <string name="delete_device_confirm_text">「%s」將從資料庫中永久移除。</string>
+    <string name="delete_selected_title">刪除選取的裝置？</string>
+    <string name="delete_selected_text">確定要永久刪除 %d 台裝置嗎？</string>
+    <string name="delete_selected_button">刪除（%d）</string>
 
     <!-- Beta update section -->
     <string name="section_beta_update">Beta 更新</string>

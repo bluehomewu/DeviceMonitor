@@ -7,6 +7,7 @@ import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import io.github.jan.supabase.SupabaseClient
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -14,6 +15,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import tw.bluehomewu.devicemonitor.data.local.PinnedOrderManager
@@ -48,6 +50,11 @@ class DeviceListViewModel(
     val currentDeviceId: String = AppModule.thisDeviceId
     val isDeleteDeviceEnabled: StateFlow<Boolean> = AppModule.isDeleteDeviceEnabled
 
+    private val _selectedIds = MutableStateFlow<Set<String>>(emptySet())
+    val selectedIds: StateFlow<Set<String>> = _selectedIds.asStateFlow()
+
+    private var autoDisableDeleteJob: Job? = null
+
     /** Ordered list of pinned device IDs (excludes current device). */
     private val _pinnedIds = MutableStateFlow(pinnedOrderManager.load())
     val pinnedIds: StateFlow<List<String>> = _pinnedIds.asStateFlow()
@@ -80,6 +87,14 @@ class DeviceListViewModel(
             while (isActive) {
                 delay(REFRESH_INTERVAL_MS)
                 fetchDevices(showLoading = false)
+            }
+        }
+        viewModelScope.launch {
+            isDeleteDeviceEnabled.collect { enabled ->
+                if (!enabled) {
+                    _selectedIds.value = emptySet()
+                    autoDisableDeleteJob?.cancel()
+                }
             }
         }
     }
@@ -117,13 +132,45 @@ class DeviceListViewModel(
         }
     }
 
+    fun toggleSelect(deviceId: String) {
+        _selectedIds.update { if (deviceId in it) it - deviceId else it + deviceId }
+    }
+
+    fun clearSelection() {
+        _selectedIds.value = emptySet()
+    }
+
+    fun deleteSelected() {
+        val ids = _selectedIds.value.toList()
+        if (ids.isEmpty()) return
+        _selectedIds.value = emptySet()
+        viewModelScope.launch {
+            ids.forEach { id ->
+                runCatching {
+                    deviceRepository.deleteDevice(id)
+                    deviceStateHolder.removeById(id)
+                }.onFailure { Log.e(TAG, "deleteDevice failed for $id", it) }
+            }
+            scheduleAutoDisable()
+        }
+    }
+
     fun deleteDevice(deviceId: String) {
         viewModelScope.launch {
             runCatching {
                 deviceRepository.deleteDevice(deviceId)
                 deviceStateHolder.removeById(deviceId)
-                AppModule.setDeleteDeviceEnabled(false)
+                _selectedIds.update { it - deviceId }
+                scheduleAutoDisable()
             }.onFailure { Log.e(TAG, "deleteDevice failed", it) }
+        }
+    }
+
+    private fun scheduleAutoDisable() {
+        autoDisableDeleteJob?.cancel()
+        autoDisableDeleteJob = viewModelScope.launch {
+            delay(60_000L)
+            AppModule.setDeleteDeviceEnabled(false)
         }
     }
 

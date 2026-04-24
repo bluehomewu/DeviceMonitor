@@ -5,8 +5,8 @@ import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.realtime.PostgresAction
 import io.github.jan.supabase.realtime.RealtimeChannel
 import io.github.jan.supabase.realtime.channel
-import io.github.jan.supabase.realtime.decodeOldRecord
 import io.github.jan.supabase.realtime.decodeRecord
+import kotlinx.serialization.json.jsonPrimitive
 import io.github.jan.supabase.realtime.postgresChangeFlow
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.launchIn
@@ -55,11 +55,13 @@ class RealtimeRepository(
                         }.onFailure { Log.e(TAG, "UPDATE decode error", it) }
                     }
                     is PostgresAction.Delete -> {
-                        runCatching {
-                            val old = action.decodeOldRecord<DeviceRecord>()
-                            deviceStateHolder.removeById(old.id)
-                            Log.d(TAG, "DELETE: ${old.deviceName}")
-                        }.onFailure { Log.e(TAG, "DELETE decode error", it) }
+                        val id = action.oldRecord["id"]?.jsonPrimitive?.content
+                        if (id != null) {
+                            deviceStateHolder.removeById(id)
+                            Log.d(TAG, "DELETE: $id")
+                        } else {
+                            Log.w(TAG, "DELETE: missing id in oldRecord")
+                        }
                     }
                     else -> {}
                 }
