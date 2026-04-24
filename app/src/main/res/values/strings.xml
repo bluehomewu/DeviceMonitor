@@ -52,6 +52,12 @@
     <string name="label_language_settings">Per-App Language Settings</string>
     <string name="label_language_not_supported">Requires Android 13+</string>
 
+    <!-- Beta update section -->
+    <string name="section_beta_update">Beta Updates</string>
+    <string name="beta_update_description">When enabled, checks for beta releases (tagged with -beta) instead of stable releases only.</string>
+    <string name="beta_update_enabled">Beta channel enabled</string>
+    <string name="beta_update_disabled">Stable channel only</string>
+
     <!-- About section -->
     <string name="section_about">About</string>
     <string name="label_version">Version</string>

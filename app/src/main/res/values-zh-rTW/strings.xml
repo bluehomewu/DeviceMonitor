@@ -52,6 +52,12 @@
     <string name="label_language_settings">個別應用程式語言設定</string>
     <string name="label_language_not_supported">需要 Android 13 以上</string>
 
+    <!-- Beta update section -->
+    <string name="section_beta_update">Beta 更新</string>
+    <string name="beta_update_description">啟用後將偵測帶有 -beta 字樣的測試版本，而非僅追蹤正式版本。</string>
+    <string name="beta_update_enabled">已啟用 Beta 頻道</string>
+    <string name="beta_update_disabled">僅追蹤正式版本</string>
+
     <!-- About section -->
     <string name="section_about">關於</string>
     <string name="label_version">版本</string>

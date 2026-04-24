@@ -48,17 +48,36 @@ class UpdateChecker {
 
     /**
      * 取得最新 release 資訊（不論版本是否比當前新）。
-     * 供「點擊版本號查看 ChangeLog」使用。
+     * [beta] = true 時從 releases 清單中找第一個含 "-beta" 的 tag；
+     * [beta] = false（預設）時取 /releases/latest（最新穩定版）。
      */
-    suspend fun fetchLatestRelease(): ReleaseInfo? {
+    suspend fun fetchLatestRelease(beta: Boolean = false): ReleaseInfo? =
+        if (beta) fetchLatestBetaRelease() else fetchLatestStableRelease()
+
+    private suspend fun fetchLatestStableRelease(): ReleaseInfo? {
         val client = HttpClient(OkHttp)
         return try {
             runCatching {
-                val body = client.get(RELEASES_API_URL) {
+                val body = client.get(RELEASES_LATEST_URL) {
                     header("Accept", "application/vnd.github+json")
                 }.bodyAsText()
-                val release = json.decodeFromString<GitHubRelease>(body)
-                release.toReleaseInfo()
+                json.decodeFromString<GitHubRelease>(body).toReleaseInfo()
+            }.getOrNull()
+        } finally {
+            client.close()
+        }
+    }
+
+    private suspend fun fetchLatestBetaRelease(): ReleaseInfo? {
+        val client = HttpClient(OkHttp)
+        return try {
+            runCatching {
+                val body = client.get(RELEASES_LIST_URL) {
+                    header("Accept", "application/vnd.github+json")
+                }.bodyAsText()
+                json.decodeFromString<List<GitHubRelease>>(body)
+                    .firstOrNull { it.tagName.contains("-beta") }
+                    ?.toReleaseInfo()
             }.getOrNull()
         } finally {
             client.close()
@@ -67,10 +86,11 @@ class UpdateChecker {
 
     /**
      * 檢查是否有比 [currentVersion] 更新的版本。
+     * [beta] = true 時比對 beta 頻道；否則只比對穩定版。
      * 有則回傳 [ReleaseInfo]，否則回傳 null。
      */
-    suspend fun checkForUpdate(currentVersion: String): ReleaseInfo? {
-        val info = fetchLatestRelease() ?: return null
+    suspend fun checkForUpdate(currentVersion: String, beta: Boolean = false): ReleaseInfo? {
+        val info = fetchLatestRelease(beta) ?: return null
         return if (isNewerVersion(info.version, currentVersion)) info else null
     }
 
@@ -94,8 +114,10 @@ class UpdateChecker {
     )
 
     companion object {
-        private const val RELEASES_API_URL =
+        private const val RELEASES_LATEST_URL =
             "https://api.github.com/repos/bluehomewu/DeviceMonitor/releases/latest"
+        private const val RELEASES_LIST_URL =
+            "https://api.github.com/repos/bluehomewu/DeviceMonitor/releases"
         const val RELEASES_PAGE_URL =
             "https://github.com/bluehomewu/DeviceMonitor/releases/latest"
     }

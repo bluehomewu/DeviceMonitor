@@ -71,10 +71,19 @@ class DeviceInfoViewModel(application: Application) : AndroidViewModel(applicati
 
     private var downloadJob: Job? = null
 
+    private val _isBetaEnabled = MutableStateFlow(prefs.getBoolean("beta_enabled", false))
+    val isBetaEnabled: StateFlow<Boolean> = _isBetaEnabled.asStateFlow()
+
+    fun setBetaEnabled(enabled: Boolean) {
+        _isBetaEnabled.value = enabled
+        prefs.edit().putBoolean("beta_enabled", enabled).apply()
+    }
+
     init {
         // App 啟動時靜默檢查是否有新版本
         viewModelScope.launch {
-            val info = UpdateChecker().checkForUpdate(BuildConfig.VERSION_NAME) ?: return@launch
+            val beta = prefs.getBoolean("beta_enabled", false)
+            val info = UpdateChecker().checkForUpdate(BuildConfig.VERSION_NAME, beta) ?: return@launch
             _releaseDialog.value = ReleaseDialogState(release = info, isUpdate = true)
         }
     }
@@ -82,7 +91,8 @@ class DeviceInfoViewModel(application: Application) : AndroidViewModel(applicati
     /** 使用者點擊版本號 → 顯示最新 Release 的 ChangeLog（不論是否為新版）。 */
     fun showChangelog() {
         viewModelScope.launch {
-            val info = UpdateChecker().fetchLatestRelease() ?: return@launch
+            val beta = _isBetaEnabled.value
+            val info = UpdateChecker().fetchLatestRelease(beta) ?: return@launch
             _releaseDialog.value = ReleaseDialogState(
                 release = info,
                 isUpdate = UpdateChecker().isNewerVersion(info.version, BuildConfig.VERSION_NAME)
