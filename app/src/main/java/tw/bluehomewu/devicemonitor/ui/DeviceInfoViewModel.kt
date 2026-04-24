@@ -116,9 +116,10 @@ class DeviceInfoViewModel(application: Application) : AndroidViewModel(applicati
             val dm = app.getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager
             val fileName = "DeviceMonitor-$version.apk"
 
-            // 若舊檔存在先刪除，避免 DownloadManager 建立重複檔名
-            File(app.getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS), fileName)
-                .takeIf { it.exists() }?.delete()
+            // 刪除所有殘留的舊版 APK（包含不同版本號）
+            app.getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS)
+                ?.listFiles { f: File -> f.name.startsWith("DeviceMonitor-") && f.name.endsWith(".apk") }
+                ?.forEach { it.delete() }
 
             val request = DownloadManager.Request(Uri.parse(apkUrl))
                 .setTitle("DeviceMonitor $version")
