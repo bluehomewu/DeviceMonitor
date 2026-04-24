@@ -71,6 +71,9 @@ class DeviceInfoViewModel(application: Application) : AndroidViewModel(applicati
 
     private var downloadJob: Job? = null
 
+    // ── 必須在 init 之前初始化，因為 init 裡的 coroutine 在 Main.immediate 下同步執行 ──
+    private val prefs = application.getSharedPreferences("app_prefs", Context.MODE_PRIVATE)
+
     init {
         // App 啟動時靜默檢查是否有新版本
         viewModelScope.launch {
@@ -178,9 +181,8 @@ class DeviceInfoViewModel(application: Application) : AndroidViewModel(applicati
     }
 
     // ── 裝置資訊 ──────────────────────────────────────────────────────
-    private val prefs = application.getSharedPreferences("app_prefs", Context.MODE_PRIVATE)
 
-    // ── 設定項（prefs 必須先初始化）─────────────────────────────────────
+    // ── 設定項（prefs 在 init 上方宣告，確保 init coroutine 可安全存取）─────────────────
     val isDeleteDeviceEnabled: StateFlow<Boolean> = AppModule.isDeleteDeviceEnabled
 
     fun setDeleteDeviceEnabled(enabled: Boolean) {
