@@ -1,6 +1,7 @@
 package tw.bluehomewu.devicemonitor.di
 
 import android.content.Context
+import android.provider.Settings
 import io.github.jan.supabase.SupabaseClient
 import tw.bluehomewu.devicemonitor.auth.GoogleAuthManager
 import tw.bluehomewu.devicemonitor.auth.SessionBackupManager
@@ -41,6 +42,11 @@ object AppModule {
 
     private lateinit var _appContext: Context
 
+    /** ANDROID_ID：每台實體裝置唯一，作為 Supabase devices 表的衝突識別鍵。 */
+    val thisDeviceId: String by lazy {
+        Settings.Secure.getString(_appContext.contentResolver, Settings.Secure.ANDROID_ID)
+    }
+
     /** 記憶體中的裝置狀態快取（取代 Room）。SharedPreferences 用於跨 process 重啟的持久化。 */
     val deviceStateHolder: DeviceStateHolder by lazy {
         DeviceStateHolder(_appContext.getSharedPreferences("app_prefs", Context.MODE_PRIVATE))
@@ -57,7 +63,7 @@ object AppModule {
     }
 
     val alertNotificationManager: AlertNotificationManager by lazy {
-        AlertNotificationManager(_appContext, deviceStateHolder)
+        AlertNotificationManager(_appContext, deviceStateHolder, thisDeviceId)
     }
 
     val pinnedOrderManager: PinnedOrderManager by lazy { PinnedOrderManager(_appContext) }

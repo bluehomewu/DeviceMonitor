@@ -1,6 +1,5 @@
 package tw.bluehomewu.devicemonitor.ui.devices
 
-import android.os.Build
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
@@ -46,7 +45,7 @@ class DeviceListViewModel(
         }
     }
 
-    val currentDeviceName: String = Build.MODEL
+    val currentDeviceId: String = AppModule.thisDeviceId
 
     /** Ordered list of pinned device IDs (excludes current device). */
     private val _pinnedIds = MutableStateFlow(pinnedOrderManager.load())
@@ -61,10 +60,10 @@ class DeviceListViewModel(
     val devices: StateFlow<List<DeviceRecord>> = combine(
         deviceStateHolder.devices, _pinnedIds
     ) { all, pinned ->
-        val current = all.find { it.deviceName == currentDeviceName }
+        val current = all.find { it.deviceId == currentDeviceId }
         val pinnedSet = pinned.toSet()
         val pinnedDevices = pinned.mapNotNull { id -> all.find { it.id == id } }
-        val rest = all.filter { it.deviceName != currentDeviceName && it.id !in pinnedSet }
+        val rest = all.filter { it.deviceId != currentDeviceId && it.id !in pinnedSet }
         listOfNotNull(current) + pinnedDevices + rest
     }.stateIn(
         scope = viewModelScope,

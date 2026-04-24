@@ -160,7 +160,7 @@ class DeviceMonitorService : Service() {
                 realtimeRepository.stopListening()
                 val uid = cachedUid ?: return@launch
                 val ownerUid = AppModule.groupUidManager.get() ?: uid
-                deviceRepository.markOffline(ownerUid)
+                deviceRepository.markOffline(ownerUid, AppModule.thisDeviceId)
             }
         }
         scope.cancel()
@@ -369,7 +369,7 @@ class DeviceMonitorService : Service() {
             // Paired (no-GMS) devices use the inviter's group UID as owner_uid
             val ownerUid = AppModule.groupUidManager.get() ?: authUid
             runCatching {
-                deviceRepository.upsertDevice(ownerUid, info, simOperator)
+                deviceRepository.upsertDevice(ownerUid, AppModule.thisDeviceId, info, simOperator)
                 Log.d(TAG, "[$reason] upsert 成功：電量=${info.batteryLevel}% 網路=${info.networkType}")
             }.onFailure { e ->
                 Log.e(TAG, "[$reason] upsert 失敗：${e::class.simpleName} — ${e.message}")

@@ -3,7 +3,6 @@ package tw.bluehomewu.devicemonitor.service
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.content.Context
-import android.os.Build
 import android.util.Log
 import androidx.core.app.NotificationCompat
 import tw.bluehomewu.devicemonitor.R
@@ -12,7 +11,8 @@ import tw.bluehomewu.devicemonitor.data.remote.DeviceRecord
 
 class AlertNotificationManager(
     private val context: Context,
-    private val deviceStateHolder: DeviceStateHolder
+    private val deviceStateHolder: DeviceStateHolder,
+    private val currentDeviceId: String
 ) {
 
     companion object {
@@ -36,16 +36,15 @@ class AlertNotificationManager(
 
     fun checkAndNotify(record: DeviceRecord) {
         // Only the master device sends low-battery alerts.
-        val currentDeviceName = Build.MODEL
         val currentDevice = deviceStateHolder.devices.value
-            .find { it.deviceName == currentDeviceName }
+            .find { it.deviceId == currentDeviceId }
         if (currentDevice == null || !currentDevice.isMaster) {
             Log.d(TAG, "非主裝置，略過通知：${record.deviceName}")
             return
         }
 
         // Don't alert the master device about its own battery.
-        if (record.deviceName == currentDeviceName) {
+        if (record.deviceId == currentDeviceId) {
             Log.d(TAG, "本機裝置，略過通知：${record.deviceName}")
             return
         }

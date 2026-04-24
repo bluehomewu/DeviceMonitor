@@ -164,10 +164,10 @@ fun DeviceListScreen(
     val dragState = remember(listState) { DragDropState(listState) }
 
     // Device subsets
-    val currentDevice = devices.find { it.deviceName == vm.currentDeviceName }
+    val currentDevice = devices.find { it.deviceId == vm.currentDeviceId }
     val pinnedDevices = pinnedIds.mapNotNull { id -> devices.find { it.id == id } }
     val unpinnedDevices = devices.filter {
-        it.deviceName != vm.currentDeviceName && it.id !in pinnedIds
+        it.deviceId != vm.currentDeviceId && it.id !in pinnedIds
     }
 
     // Global index range for pinned items in the LazyColumn

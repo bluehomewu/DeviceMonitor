@@ -12,10 +12,11 @@ class DeviceRepository(private val supabase: SupabaseClient) {
 
     /**
      * Upsert 當前裝置狀態到 Supabase devices 表。
-     * 以 (owner_uid, device_name) 為唯一鍵。
+     * 以 (owner_uid, device_id) 為唯一鍵；device_id 為 ANDROID_ID，保證跨同型號裝置唯一。
      */
-    suspend fun upsertDevice(ownerUid: String, info: DeviceInfo, simOperator: String? = null) {
+    suspend fun upsertDevice(ownerUid: String, deviceId: String, info: DeviceInfo, simOperator: String? = null) {
         val row = DeviceRow(
+            deviceId = deviceId,
             ownerUid = ownerUid,
             deviceName = Build.MODEL,
             batteryLevel = info.batteryLevel,
@@ -34,7 +35,7 @@ class DeviceRepository(private val supabase: SupabaseClient) {
             signalDbm = info.signalDbm
         )
         supabase.from("devices").upsert(row) {
-            onConflict = "owner_uid,device_name"
+            onConflict = "owner_uid,device_id"
         }
     }
 
@@ -46,12 +47,12 @@ class DeviceRepository(private val supabase: SupabaseClient) {
         supabase.from("devices").select().decodeList<DeviceRecord>()
 
     /** 標記裝置離線（Service 停止時呼叫）。 */
-    suspend fun markOffline(ownerUid: String) {
+    suspend fun markOffline(ownerUid: String, deviceId: String) {
         supabase.from("devices").update(
             { set("is_online", false) }
         ) {
             filter { eq("owner_uid", ownerUid) }
-            filter { eq("device_name", Build.MODEL) }
+            filter { eq("device_id", deviceId) }
         }
     }
 

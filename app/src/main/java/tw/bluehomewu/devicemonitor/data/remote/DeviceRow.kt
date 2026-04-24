@@ -9,10 +9,14 @@ import kotlinx.serialization.Serializable
  * 注意：upsert 需在 Supabase 建立唯一約束：
  *   ALTER TABLE devices
  *     ADD CONSTRAINT devices_owner_device_unique
- *     UNIQUE (owner_uid, device_name);
+ *     UNIQUE (owner_uid, device_id);
+ *
+ * device_id 使用 ANDROID_ID，保證同一台實體裝置唯一，
+ * 解決相同型號的多台裝置互蓋的問題。
  */
 @Serializable
 data class DeviceRow(
+    @SerialName("device_id")     val deviceId: String,
     @SerialName("owner_uid")     val ownerUid: String,
     @SerialName("device_name")   val deviceName: String,
     @SerialName("battery_level") val batteryLevel: Int,

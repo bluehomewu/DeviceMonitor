@@ -10,6 +10,7 @@ import kotlinx.serialization.Serializable
 @Serializable
 data class DeviceRecord(
     val id: String,
+    @SerialName("device_id")       val deviceId: String? = null,
     @SerialName("owner_uid")      val ownerUid: String,
     @SerialName("device_name")    val deviceName: String,
     @SerialName("battery_level")  val batteryLevel: Int,
