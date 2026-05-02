@@ -69,7 +69,7 @@ class AlertNotificationManager(
                 if (lastLevel != level) {
                     Log.i(TAG, "觸發低電量通知：${record.deviceName} $level% < $threshold%（前次=$lastLevel）")
                     lastNotifiedLevel[deviceId] = level
-                    postAlert(record.deviceName, level, threshold, deviceId)
+                    postAlert(record.alias ?: record.deviceName, level, threshold, deviceId)
                 } else {
                     Log.d(TAG, "電量未變（$level%），略過重複通知：${record.deviceName}")
                 }
