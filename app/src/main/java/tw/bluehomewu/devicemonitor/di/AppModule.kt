@@ -14,8 +14,10 @@ import tw.bluehomewu.devicemonitor.BuildConfig
 import tw.bluehomewu.devicemonitor.data.local.GroupUidManager
 import tw.bluehomewu.devicemonitor.data.local.PinnedOrderManager
 import tw.bluehomewu.devicemonitor.data.memory.DeviceStateHolder
+import tw.bluehomewu.devicemonitor.data.memory.PartnerStateHolder
 import tw.bluehomewu.devicemonitor.data.remote.DeviceRepository
 import tw.bluehomewu.devicemonitor.data.remote.PairingRepository
+import tw.bluehomewu.devicemonitor.data.remote.PartnerRepository
 import tw.bluehomewu.devicemonitor.data.remote.RealtimeRepository
 import tw.bluehomewu.devicemonitor.service.AlertNotificationManager
 
@@ -82,9 +84,11 @@ object AppModule {
     val pinnedOrderManager: PinnedOrderManager by lazy { PinnedOrderManager(_appContext) }
     val groupUidManager: GroupUidManager by lazy { GroupUidManager(_appContext) }
     val pairingRepository: PairingRepository by lazy { PairingRepository(supabase) }
+    val partnerRepository: PartnerRepository by lazy { PartnerRepository(supabase) }
+    val partnerStateHolder: PartnerStateHolder by lazy { PartnerStateHolder() }
 
     val realtimeRepository: RealtimeRepository by lazy {
-        RealtimeRepository(supabase, deviceStateHolder, alertNotificationManager)
+        RealtimeRepository(supabase, deviceStateHolder, partnerStateHolder, alertNotificationManager)
     }
 
     fun initialize(context: Context) {

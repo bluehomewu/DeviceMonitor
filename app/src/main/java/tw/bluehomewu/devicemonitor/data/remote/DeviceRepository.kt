@@ -40,11 +40,28 @@ class DeviceRepository(private val supabase: SupabaseClient) {
     }
 
     /**
-     * 取得帳號下所有裝置（RLS 自動過濾）。
-     * 用於 App 啟動時的初始載入，後續由 Realtime 即時更新。
+     * 取得帳號下裝置（RLS 自動過濾）。
+     * 傳入 ownerUid 時只回傳自己的裝置（排除夥伴共享裝置）；
+     * 不傳時回傳所有 RLS 允許的裝置。
      */
-    suspend fun fetchAll(): List<DeviceRecord> =
-        supabase.from("devices").select().decodeList<DeviceRecord>()
+    suspend fun fetchAll(ownerUid: String? = null): List<DeviceRecord> =
+        if (ownerUid != null) {
+            supabase.from("devices").select {
+                filter { eq("owner_uid", ownerUid) }
+            }.decodeList()
+        } else {
+            supabase.from("devices").select().decodeList()
+        }
+
+    /** 以 UUID 清單批次取得裝置紀錄（用於載入夥伴分享的裝置）。 */
+    suspend fun fetchDevicesByIds(ids: List<String>): List<DeviceRecord> {
+        if (ids.isEmpty()) return emptyList()
+        return runCatching {
+            supabase.from("devices").select {
+                filter { isIn("id", ids) }
+            }.decodeList<DeviceRecord>()
+        }.getOrDefault(emptyList())
+    }
 
     /** 標記裝置離線（Service 停止時呼叫）。 */
     suspend fun markOffline(ownerUid: String, deviceId: String) {

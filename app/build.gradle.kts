@@ -24,8 +24,8 @@ android {
         applicationId = "tw.bluehomewu.devicemonitor"
         minSdk = 29
         targetSdk = 36
-        versionCode = 31
-        versionName = "1.12.2"
+        versionCode = 32
+        versionName = "1.13.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
@@ -101,6 +101,9 @@ dependencies {
     implementation(libs.credentials)
     implementation(libs.credentials.play.services)
     implementation(libs.googleid)
+
+    // QR Code 產生（夥伴模式邀請碼）
+    implementation(libs.zxing.core)
 
     // Test
     testImplementation(libs.junit)

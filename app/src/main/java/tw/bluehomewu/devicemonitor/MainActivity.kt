@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Devices
+import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.PhoneAndroid
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
@@ -47,15 +48,15 @@ import tw.bluehomewu.devicemonitor.ui.auth.LoginScreen
 import tw.bluehomewu.devicemonitor.ui.devices.DeviceListScreen
 import tw.bluehomewu.devicemonitor.ui.devices.DeviceListViewModel
 import tw.bluehomewu.devicemonitor.ui.pairing.PairingInviteDialog
+import tw.bluehomewu.devicemonitor.ui.partner.PartnerScreen
+import tw.bluehomewu.devicemonitor.ui.partner.PartnerViewModel
 import tw.bluehomewu.devicemonitor.ui.theme.DeviceMonitorTheme
 
-private enum class MainTab { MY_DEVICE, ALL_DEVICES }
+private enum class MainTab { MY_DEVICE, ALL_DEVICES, PARTNER }
 
 class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
-        // Must be called before super.onCreate() so the splash screen
-        // window attributes are applied before the Activity window is created.
         installSplashScreen()
         super.onCreate(savedInstanceState)
         val themePrefs = getSharedPreferences("app_prefs", MODE_PRIVATE)
@@ -76,7 +77,6 @@ class MainActivity : ComponentActivity() {
             }
 
             DeviceMonitorTheme(darkTheme = isDarkTheme) {
-                // Surface 確保背景色隨 theme 正確顯示（登入頁、載入畫面皆適用）
                 Surface(modifier = Modifier.fillMaxSize()) {
                     val authVm: AuthViewModel = viewModel(
                         factory = AuthViewModel.factory(application)
@@ -97,7 +97,6 @@ class MainActivity : ComponentActivity() {
                         permLauncher.launch(perms.toTypedArray())
                     }
 
-                    // 啟動時嘗試 session 還原 + 靜默重登（整個過程維持 Loading，不閃登入頁）
                     LaunchedEffect(Unit) {
                         authVm.tryAutoSignIn(this@MainActivity)
                     }
@@ -120,8 +119,20 @@ class MainActivity : ComponentActivity() {
                             val listVm: DeviceListViewModel = viewModel(
                                 factory = DeviceListViewModel.factory()
                             )
+                            val partnerVm: PartnerViewModel = viewModel(
+                                factory = PartnerViewModel.factory(userId)
+                            )
                             var selectedTab by rememberSaveable { mutableStateOf(MainTab.MY_DEVICE) }
                             var showPairingDialog by remember { mutableStateOf(false) }
+
+                            // 有 active 夥伴才顯示 PARTNER tab；失去夥伴時跳回 MY_DEVICE
+                            val partners by partnerVm.partners.collectAsStateWithLifecycle()
+                            val hasPartners = partners.isNotEmpty()
+                            LaunchedEffect(hasPartners) {
+                                if (!hasPartners && selectedTab == MainTab.PARTNER) {
+                                    selectedTab = MainTab.MY_DEVICE
+                                }
+                            }
 
                             if (showPairingDialog) {
                                 PairingInviteDialog(
@@ -158,6 +169,17 @@ class MainActivity : ComponentActivity() {
                                             },
                                             label = { Text(stringResource(R.string.tab_device_list)) }
                                         )
+                                        // 有夥伴才顯示此 Tab
+                                        if (hasPartners) {
+                                            NavigationBarItem(
+                                                selected = selectedTab == MainTab.PARTNER,
+                                                onClick = { selectedTab = MainTab.PARTNER },
+                                                icon = {
+                                                    Icon(Icons.Default.Favorite, contentDescription = null)
+                                                },
+                                                label = { Text("夥伴") }
+                                            )
+                                        }
                                     }
                                 }
                             ) { innerPadding ->
@@ -176,6 +198,11 @@ class MainActivity : ComponentActivity() {
                                             modifier = Modifier.padding(innerPadding),
                                             vm = listVm,
                                             onPairDevice = { showPairingDialog = true }
+                                        )
+                                    MainTab.PARTNER ->
+                                        PartnerScreen(
+                                            modifier = Modifier.padding(innerPadding),
+                                            vm = partnerVm
                                         )
                                 }
                             }

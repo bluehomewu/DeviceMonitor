@@ -82,6 +82,44 @@ class AlertNotificationManager(
         }
     }
 
+    /**
+     * 夥伴分享裝置的低電量檢查（不需是主裝置；警報閾值使用分享者設定）。
+     * receiveAlerts 由接收者在夥伴設定中獨立控制。
+     */
+    fun checkSharedDeviceAlert(record: DeviceRecord, receiveAlerts: Boolean) {
+        if (!receiveAlerts) return
+        val level = record.batteryLevel
+        val threshold = record.alertThreshold
+        val deviceId = record.id
+        val displayName = record.alias ?: record.deviceName
+
+        if (record.isCharging) {
+            if (lastNotifiedLevel.remove(deviceId) != null) {
+                Log.d(TAG, "$displayName [共享] 充電中，清除通知狀態")
+            }
+            return
+        }
+        if (level < threshold) {
+            val lastLevel = lastNotifiedLevel[deviceId]
+            if (lastLevel != level) {
+                Log.i(TAG, "共享裝置觸發低電量：$displayName $level% < $threshold%")
+                lastNotifiedLevel[deviceId] = level
+                postAlert(displayName, level, threshold, deviceId)
+            }
+        } else {
+            if (lastNotifiedLevel.remove(deviceId) != null) {
+                Log.d(TAG, "$displayName [共享] 電量回復（$level% >= $threshold%）")
+            }
+        }
+    }
+
+    /** 取消指定裝置的警報通知並清除狀態（分享被撤銷時呼叫）。 */
+    fun cancelAlert(deviceId: String) {
+        nm.cancel(deviceId.hashCode())
+        lastNotifiedLevel.remove(deviceId)
+        Log.d(TAG, "警報已撤銷：$deviceId")
+    }
+
     private fun postAlert(deviceName: String, level: Int, threshold: Int, deviceId: String) {
         val notifId = deviceId.hashCode()
         val notification = NotificationCompat.Builder(context, ALERT_CHANNEL_ID)

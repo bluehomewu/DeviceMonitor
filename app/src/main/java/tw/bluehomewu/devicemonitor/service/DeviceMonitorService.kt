@@ -278,11 +278,32 @@ class DeviceMonitorService : Service() {
             val effectiveUid = AppModule.groupUidManager.get() ?: uid!!
 
             runCatching {
-                val records = deviceRepository.fetchAll()
+                val records = deviceRepository.fetchAll(effectiveUid)
                 deviceStateHolder.setAll(records)
                 Log.d(TAG, "初始載入 ${records.size} 台裝置")
                 records.forEach { alertNotificationManager.checkAndNotify(it) }
             }.onFailure { Log.e(TAG, "初始載入失敗", it) }
+
+            // 載入夥伴關係與共享裝置資料（使用真實 Google UID，非 effectiveUid）
+            runCatching {
+                val partnerRepo = AppModule.partnerRepository
+                val partnerHolder = AppModule.partnerStateHolder
+                val partnerships = partnerRepo.fetchActivePartnerships(uid!!)
+                partnerHolder.setPartnerships(partnerships)
+                val allShared = partnerRepo.fetchAllSharedDevices()
+                partnerHolder.setSharedDevices(allShared)
+                val sharedWithMeIds = allShared.filter { it.ownerUid != uid }.map { it.deviceId }
+                if (sharedWithMeIds.isNotEmpty()) {
+                    val records = deviceRepository.fetchDevicesByIds(sharedWithMeIds)
+                    records.forEach {
+                        partnerHolder.upsertSharedRecord(it)
+                        alertNotificationManager.checkSharedDeviceAlert(
+                            it, partnerHolder.getReceiveAlerts(it.id)
+                        )
+                    }
+                }
+                Log.d(TAG, "夥伴資料載入：${partnerships.size} 個夥伴, ${allShared.size} 筆共享裝置")
+            }.onFailure { Log.w(TAG, "夥伴資料載入失敗（非致命）", it) }
 
             runCatching {
                 realtimeRepository.startListening(effectiveUid, scope)
@@ -349,11 +370,25 @@ class DeviceMonitorService : Service() {
             while (isActive) {
                 delay(REFRESH_INTERVAL_MS)
                 runCatching {
-                    val records = deviceRepository.fetchAll()
+                    val uid = cachedUid ?: return@runCatching
+                    val records = deviceRepository.fetchAll(uid)
                     deviceStateHolder.setAll(records)
                     Log.d(TAG, "定時刷新 ${records.size} 台裝置")
-                    // 備援輪詢也做警報檢查：Realtime 斷線時仍能發通知
                     records.forEach { alertNotificationManager.checkAndNotify(it) }
+                    // 同步刷新夥伴共享裝置
+                    val partnerHolder = AppModule.partnerStateHolder
+                    val sharedIds = partnerHolder.sharedDevices.value
+                        .filter { it.ownerUid != uid }
+                        .map { it.deviceId }
+                    if (sharedIds.isNotEmpty()) {
+                        val shared = deviceRepository.fetchDevicesByIds(sharedIds)
+                        shared.forEach {
+                            partnerHolder.upsertSharedRecord(it)
+                            alertNotificationManager.checkSharedDeviceAlert(
+                                it, partnerHolder.getReceiveAlerts(it.id)
+                            )
+                        }
+                    }
                 }.onFailure { Log.e(TAG, "定時刷新失敗", it) }
             }
         }
