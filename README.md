@@ -17,7 +17,7 @@ No self-hosted server required — just sign in with a Google account and start 
 - Device alias: set a custom display name for each device
 - **Pinned devices**: your own device is always at the top; swipe right on any card to pin it; pinned devices support long-press drag-to-reorder
 - **Delete device**: enable delete mode in settings to reveal a delete button on each card (swipe right); supports multi-select — tap cards to select, then tap the header button to batch-delete; delete mode auto-disables 60 seconds after the last deletion
-- **Partner mode**: share device monitoring across different Google accounts — generate an invite code, let the other person scan or enter it, and their devices appear in your monitor list (and vice versa)
+- **Partner mode**: share device monitoring across different Google accounts — generate an 8-character invite code (with QR code) and let the other user scan or enter it; manage which devices are shared per partner; set custom display names for partners and aliases for their devices (aliases are also used in low-battery notifications); share or unshare a device directly from the monitor list with a swipe
 - **In-app update**: automatically checks for new versions on launch; download and install the APK without leaving the app
 - **Beta update channel**: opt in to receive beta releases (tagged with `-beta`) instead of stable-only updates
 - Continuous background monitoring — uploads status even when the screen is off
@@ -58,7 +58,7 @@ Only one master device is allowed per account.
 
 | Action | Description |
 |---|---|
-| Swipe right on a card | Reveal the pin button (and delete button if delete mode is on) |
+| Swipe right on a card | Reveal the pin, share, and (if delete mode is on) delete buttons |
 | Long-press the drag handle on a pinned card | Drag vertically to reorder pinned devices |
 | Tap a card | Expand / collapse device details (or toggle selection in delete mode) |
 | Tap the pencil icon | Set a device alias |
@@ -72,12 +72,27 @@ Your own device is always fixed at the very top of the list and cannot be displa
 
 Partner mode lets two users on **different Google accounts** monitor each other's devices.
 
-1. One user opens the **Partner** tab → **Create Invite**
-2. Share the generated code with the other user
-3. The other user opens the **Partner** tab → **Join with Code** → enters the code
-4. Both users can now see each other's shared devices in their monitor list
+### Adding a partner
 
-Each partner can independently control which of their own devices are shared and whether the partner receives low-battery alerts for those devices.
+1. Open the **Partner** tab → tap **Create Invite**
+2. Select the devices to share (a select-all option is available), then tap **Generate Invite Code**
+3. Share the 8-character code or QR code with the other user
+4. The other user opens the **Partner** tab → **Join with Code** → type the code manually or tap the QR icon to scan it
+5. Pairing is complete — both users can now see each other's shared devices
+
+### Managing shared devices
+
+- **Share from the monitor list**: swipe right on any device card to reveal a share button; toggle sharing per partner without leaving the list
+- **Add more devices later**: on the Partner tab, tap **Manage Sharing** on a partner card; select additional devices to share (select-all available)
+- **Remove a shared device**: tap × on any device in the "Shared by me" section of the partner card
+
+### Naming and notifications
+
+- **Rename a partner**: tap the pencil icon in the partner card header to set a custom display name
+- **Set a device alias**: tap the pencil icon next to any shared device to give it a custom name; the alias is also used in low-battery notifications
+- Each partner independently controls whether they receive low-battery alerts for each shared device via a per-device toggle
+
+Up to 5 partners per account.
 
 ---
 
