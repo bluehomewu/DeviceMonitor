@@ -5,7 +5,7 @@ import android.content.SharedPreferences
 class BatteryHistoryManager(private val prefs: SharedPreferences) {
 
     companion object {
-        private const val MAX_HISTORY = 24
+        private const val MAX_HISTORY = 5
     }
 
     fun addEntry(deviceId: String, level: Int) {
