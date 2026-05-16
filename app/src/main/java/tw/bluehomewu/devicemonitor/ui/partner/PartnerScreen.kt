@@ -710,18 +710,24 @@ private fun ManageShareSheet(
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             } else {
-                availableDevices.forEach { device ->
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Checkbox(
-                            checked = device.id in selected,
-                            onCheckedChange = { checked ->
-                                if (checked) selected.add(device.id) else selected.remove(device.id)
-                            }
-                        )
-                        Text(device.alias ?: device.deviceName, style = MaterialTheme.typography.bodyMedium)
+                LazyColumn(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .heightIn(max = 240.dp)
+                ) {
+                    items(availableDevices, key = { it.id }) { device ->
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Checkbox(
+                                checked = device.id in selected,
+                                onCheckedChange = { checked ->
+                                    if (checked) selected.add(device.id) else selected.remove(device.id)
+                                }
+                            )
+                            Text(device.alias ?: device.deviceName, style = MaterialTheme.typography.bodyMedium)
+                        }
                     }
                 }
             }
