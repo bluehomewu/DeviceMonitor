@@ -89,7 +89,9 @@ object AppModule {
     }
     val pairingRepository: PairingRepository by lazy { PairingRepository(supabase) }
     val partnerRepository: PartnerRepository by lazy { PartnerRepository(supabase) }
-    val partnerStateHolder: PartnerStateHolder by lazy { PartnerStateHolder() }
+    val partnerStateHolder: PartnerStateHolder by lazy {
+        PartnerStateHolder(_appContext.getSharedPreferences("partner_prefs", Context.MODE_PRIVATE))
+    }
 
     val realtimeRepository: RealtimeRepository by lazy {
         RealtimeRepository(supabase, deviceStateHolder, partnerStateHolder, alertNotificationManager, deviceRepository)
