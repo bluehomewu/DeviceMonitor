@@ -236,6 +236,20 @@ class AlertNotificationManager(
         Log.d(TAG, "充滿電通知已發送：$deviceName")
     }
 
+    /** FCM 推播訊息落地顯示（從 FcmService 呼叫）。不檢查靜音時段，因為推播已由後端決定發送時機。 */
+    fun postFcmAlert(title: String, body: String, deviceId: String?) {
+        val notifId = ("fcm_${deviceId}_${title}").hashCode()
+        val notification = NotificationCompat.Builder(context, ALERT_CHANNEL_ID)
+            .setContentTitle(title)
+            .setContentText(body)
+            .setSmallIcon(android.R.drawable.ic_dialog_alert)
+            .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .setAutoCancel(true)
+            .build()
+        nm.notify(notifId, notification)
+        Log.d(TAG, "FCM 推播通知已顯示：$title")
+    }
+
     private fun postAlert(deviceName: String, level: Int, threshold: Int, deviceId: String) {
         if (isInQuietHours()) { Log.d(TAG, "靜音時段，略過低電量通知：$deviceName"); return }
         val notifId = deviceId.hashCode()

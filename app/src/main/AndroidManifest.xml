@@ -84,6 +84,15 @@
                 android:resource="@xml/file_paths" />
         </provider>
 
+        <!-- FCM Service（接收推播通知與 token 刷新） -->
+        <service
+            android:name=".fcm.FcmService"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="com.google.firebase.MESSAGING_EVENT" />
+            </intent-filter>
+        </service>
+
         <!-- Glance App Widget -->
         <receiver
             android:name=".widget.DeviceWidgetReceiver"

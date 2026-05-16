@@ -13,6 +13,7 @@ import io.github.jan.supabase.realtime.Realtime
 import tw.bluehomewu.devicemonitor.BuildConfig
 import tw.bluehomewu.devicemonitor.data.local.BatteryHistoryManager
 import tw.bluehomewu.devicemonitor.data.local.GroupUidManager
+import tw.bluehomewu.devicemonitor.fcm.FcmTokenManager
 import tw.bluehomewu.devicemonitor.data.local.PartnerNamingManager
 import tw.bluehomewu.devicemonitor.data.local.PinnedOrderManager
 import tw.bluehomewu.devicemonitor.data.memory.DeviceStateHolder
@@ -85,6 +86,10 @@ object AppModule {
 
     val batteryHistoryManager: BatteryHistoryManager by lazy {
         BatteryHistoryManager(_appContext.getSharedPreferences("battery_history", Context.MODE_PRIVATE))
+    }
+
+    val fcmTokenManager: FcmTokenManager by lazy {
+        FcmTokenManager(_appContext.getSharedPreferences("app_prefs", Context.MODE_PRIVATE))
     }
     val pinnedOrderManager: PinnedOrderManager by lazy { PinnedOrderManager(_appContext) }
     val groupUidManager: GroupUidManager by lazy { GroupUidManager(_appContext) }

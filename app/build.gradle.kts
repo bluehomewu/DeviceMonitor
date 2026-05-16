@@ -24,14 +24,19 @@ android {
         applicationId = "tw.bluehomewu.devicemonitor"
         minSdk = 29
         targetSdk = 36
-        versionCode = 59
-        versionName = "1.33.0"
+        versionCode = 60
+        versionName = "1.34.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
         buildConfigField("String", "SUPABASE_URL", "\"${localProps["SUPABASE_URL"] ?: ""}\"")
         buildConfigField("String", "SUPABASE_ANON_KEY", "\"${localProps["SUPABASE_ANON_KEY"] ?: ""}\"")
         buildConfigField("String", "GOOGLE_WEB_CLIENT_ID", "\"${localProps["GOOGLE_WEB_CLIENT_ID"] ?: ""}\"")
+        // Firebase（FCM）— 填寫後可接收推播通知（見 README）
+        buildConfigField("String", "FIREBASE_APP_ID", "\"${localProps["FIREBASE_APP_ID"] ?: ""}\"")
+        buildConfigField("String", "FIREBASE_API_KEY", "\"${localProps["FIREBASE_API_KEY"] ?: ""}\"")
+        buildConfigField("String", "FIREBASE_SENDER_ID", "\"${localProps["FIREBASE_SENDER_ID"] ?: ""}\"")
+        buildConfigField("String", "FIREBASE_PROJECT_ID", "\"${localProps["FIREBASE_PROJECT_ID"] ?: ""}\"")
     }
 
     signingConfigs {
@@ -105,6 +110,10 @@ dependencies {
     // Jetpack Glance（首頁 Widget）
     @Suppress("UseTomlInstead")
     implementation("androidx.glance:glance-appwidget:1.1.1")
+
+    // Firebase Messaging（FCM 推播通知，不使用 google-services plugin）
+    @Suppress("UseTomlInstead")
+    implementation("com.google.firebase:firebase-messaging:25.0.2")
 
     // QR Code 產生 + 掃描（夥伴模式邀請碼）
     implementation(libs.zxing.core)

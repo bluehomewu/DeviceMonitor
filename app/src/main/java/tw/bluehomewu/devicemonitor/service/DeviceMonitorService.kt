@@ -33,6 +33,7 @@ import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withTimeoutOrNull
 import tw.bluehomewu.devicemonitor.R
 import tw.bluehomewu.devicemonitor.data.collector.BatteryCollector
+import com.google.firebase.messaging.FirebaseMessaging
 import tw.bluehomewu.devicemonitor.widget.DeviceWidget
 import tw.bluehomewu.devicemonitor.data.collector.NetworkCollector
 import tw.bluehomewu.devicemonitor.data.model.DeviceInfo
@@ -319,6 +320,25 @@ class DeviceMonitorService : Service() {
             runCatching {
                 realtimeRepository.startListening(effectiveUid, scope)
             }.onFailure { Log.e(TAG, "Realtime 訂閱失敗", it) }
+
+            // FCM token 同步：取得目前 token 後更新 Supabase（若 Firebase 未初始化則跳過）
+            runCatching {
+                val cachedToken = AppModule.fcmTokenManager.getToken()
+                if (cachedToken != null) {
+                    deviceRepository.updateFcmToken(ownerUid, AppModule.thisDeviceId, cachedToken)
+                    Log.d(TAG, "已同步快取 FCM token")
+                } else {
+                    FirebaseMessaging.getInstance().token.addOnSuccessListener { token ->
+                        AppModule.fcmTokenManager.saveToken(token)
+                        scope.launch {
+                            runCatching {
+                                deviceRepository.updateFcmToken(ownerUid, AppModule.thisDeviceId, token)
+                                Log.d(TAG, "FCM token 已首次同步")
+                            }
+                        }
+                    }
+                }
+            }.onFailure { Log.w(TAG, "FCM token 同步失敗（Firebase 未初始化？）：${it.message}") }
         }
 
         // 事件驅動：電量或網路變化 → 立即 upsert

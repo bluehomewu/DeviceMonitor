@@ -113,6 +113,16 @@ class DeviceRepository(private val supabase: SupabaseClient) {
         }
     }
 
+    /** 更新本機裝置的 FCM token（token 刷新時呼叫）。 */
+    suspend fun updateFcmToken(ownerUid: String, deviceId: String, token: String) {
+        supabase.from("devices").update(
+            { set("fcm_token", token) }
+        ) {
+            filter { eq("owner_uid", ownerUid) }
+            filter { eq("device_id", deviceId) }
+        }
+    }
+
     /** 更新指定裝置的低電量警報閾值（10% 間隔，10–100）。 */
     suspend fun setAlertThreshold(deviceId: String, threshold: Int) {
         supabase.from("devices").update(
