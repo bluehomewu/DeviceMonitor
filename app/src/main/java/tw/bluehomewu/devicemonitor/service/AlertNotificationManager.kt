@@ -24,6 +24,7 @@ class AlertNotificationManager(
 
     private val lastNotifiedLevel = mutableMapOf<String, Int>()
     private val fullChargeNotified = mutableSetOf<String>()
+    private val lastOnlineState = mutableMapOf<String, Boolean>()
 
     fun createChannel() {
         val channel = NotificationChannel(
@@ -55,6 +56,13 @@ class AlertNotificationManager(
         val displayName = record.alias ?: record.deviceName
 
         Log.d(TAG, "checkAndNotify: ${record.deviceName} level=$level% threshold=$threshold%")
+
+        val wasOnline = lastOnlineState[deviceId]
+        lastOnlineState[deviceId] = record.isOnline
+        if (!record.isOnline && wasOnline == true) {
+            Log.i(TAG, "裝置離線通知：$displayName")
+            postOfflineAlert(displayName, deviceId)
+        }
 
         if (level == 100 && record.isCharging) {
             if (fullChargeNotified.add(deviceId)) {
@@ -103,6 +111,13 @@ class AlertNotificationManager(
         val deviceId = record.id
         val displayName = record.alias ?: record.deviceName
 
+        val wasOnline = lastOnlineState[deviceId]
+        lastOnlineState[deviceId] = record.isOnline
+        if (!record.isOnline && wasOnline == true) {
+            Log.i(TAG, "共享裝置離線通知：$displayName")
+            postOfflineAlert(displayName, deviceId)
+        }
+
         if (level == 100 && record.isCharging) {
             if (fullChargeNotified.add(deviceId)) {
                 Log.i(TAG, "共享裝置觸發充滿電通知：$displayName")
@@ -138,9 +153,24 @@ class AlertNotificationManager(
     fun cancelAlert(deviceId: String) {
         nm.cancel(deviceId.hashCode())
         nm.cancel("full_${deviceId}".hashCode())
+        nm.cancel("offline_${deviceId}".hashCode())
         lastNotifiedLevel.remove(deviceId)
         fullChargeNotified.remove(deviceId)
+        lastOnlineState.remove(deviceId)
         Log.d(TAG, "警報已撤銷：$deviceId")
+    }
+
+    private fun postOfflineAlert(deviceName: String, deviceId: String) {
+        val notifId = "offline_${deviceId}".hashCode()
+        val notification = NotificationCompat.Builder(context, ALERT_CHANNEL_ID)
+            .setContentTitle(context.getString(R.string.notif_offline_title, deviceName))
+            .setContentText(context.getString(R.string.notif_offline_text))
+            .setSmallIcon(android.R.drawable.ic_dialog_alert)
+            .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .setAutoCancel(true)
+            .build()
+        nm.notify(notifId, notification)
+        Log.d(TAG, "裝置離線通知已發送：$deviceName")
     }
 
     private fun postFullChargeAlert(deviceName: String, deviceId: String) {

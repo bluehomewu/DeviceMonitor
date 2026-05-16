@@ -121,4 +121,6 @@
     <string name="notif_alert_text">Battery at %1$d%%, below threshold %2$d%%</string>
     <string name="notif_full_charge_title">Fully Charged: %s</string>
     <string name="notif_full_charge_text">Battery is at 100%% — you can unplug now.</string>
+    <string name="notif_offline_title">Device Offline: %s</string>
+    <string name="notif_offline_text">This device has stopped reporting — it may be off or out of range.</string>
 </resources>

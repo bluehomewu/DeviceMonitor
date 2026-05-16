@@ -121,4 +121,6 @@
     <string name="notif_alert_text">電量剩 %1$d%%，低於警報閾值 %2$d%%</string>
     <string name="notif_full_charge_title">充滿電：%s</string>
     <string name="notif_full_charge_text">電量已達 100%%，可以拔除充電線了。</string>
+    <string name="notif_offline_title">裝置離線：%s</string>
+    <string name="notif_offline_text">此裝置已停止回報，可能已關機或超出網路範圍。</string>
 </resources>
