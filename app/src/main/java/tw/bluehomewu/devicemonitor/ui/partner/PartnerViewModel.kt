@@ -80,7 +80,11 @@ class PartnerViewModel(
             val pDevices = sharedDevices.filter { it.partnershipId == p.id }
             val withMe = pDevices
                 .filter { it.ownerUid != myUid }
-                .map { sd -> SharedDeviceWithRecord(sd, sharedRecords[sd.deviceId]) }
+                .map { sd ->
+                    val record = sharedRecords[sd.deviceId]
+                    val localAlias = naming.getDeviceAlias(sd.deviceId)
+                    SharedDeviceWithRecord(sd, if (localAlias != null) record?.copy(alias = localAlias) else record)
+                }
             val byMe = pDevices
                 .filter { it.ownerUid == myUid }
                 .map { sd -> SharedDeviceWithRecord(sd, ownDevicesSnapshot.firstOrNull { it.id == sd.deviceId }) }
@@ -198,6 +202,11 @@ class PartnerViewModel(
 
     fun renamePartner(partnershipId: String, name: String?) {
         AppModule.partnerNamingManager.setPartnerName(partnershipId, name)
+        _localVersion.value++
+    }
+
+    fun setSharedDeviceAlias(deviceId: String, alias: String?) {
+        AppModule.partnerNamingManager.setDeviceAlias(deviceId, alias)
         _localVersion.value++
     }
 

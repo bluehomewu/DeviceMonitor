@@ -96,6 +96,8 @@ fun PartnerScreen(
     var manageTarget by remember { mutableStateOf<PartnerEntry?>(null) }
     var renamingEntry by remember { mutableStateOf<PartnerEntry?>(null) }
     var renameInput by remember { mutableStateOf("") }
+    var renamingDeviceId by remember { mutableStateOf<String?>(null) }
+    var renameDeviceInput by remember { mutableStateOf("") }
 
     // Error → Snackbar
     LaunchedEffect(error) {
@@ -185,6 +187,10 @@ fun PartnerScreen(
                                 renameInput = entry.customName ?: ""
                                 renamingEntry = entry
                             },
+                            onRenameDevice = { deviceId, currentLabel ->
+                                renameDeviceInput = currentLabel
+                                renamingDeviceId = deviceId
+                            },
                             onDissolve = { dissolveTarget = entry.partnership.id }
                         )
                     }
@@ -247,6 +253,32 @@ fun PartnerScreen(
         )
     }
 
+    // ── Rename shared device dialog ────────────────────────────────────────────
+    renamingDeviceId?.let { deviceId ->
+        AlertDialog(
+            onDismissRequest = { renamingDeviceId = null },
+            title = { Text("設定裝置別名") },
+            text = {
+                OutlinedTextField(
+                    value = renameDeviceInput,
+                    onValueChange = { renameDeviceInput = it },
+                    label = { Text("別名（留空還原預設）") },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth()
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    vm.setSharedDeviceAlias(deviceId, renameDeviceInput.takeIf { it.isNotBlank() })
+                    renamingDeviceId = null
+                }) { Text("確認") }
+            },
+            dismissButton = {
+                TextButton(onClick = { renamingDeviceId = null }) { Text("取消") }
+            }
+        )
+    }
+
     // ── Rename partner dialog ──────────────────────────────────────────────────
     renamingEntry?.let { entry ->
         AlertDialog(
@@ -299,6 +331,7 @@ private fun PartnerCard(
     onRemoveShared: (sharedDeviceId: String) -> Unit,
     onManageSharing: () -> Unit,
     onRename: () -> Unit,
+    onRenameDevice: (deviceId: String, currentLabel: String) -> Unit,
     onDissolve: () -> Unit
 ) {
     Card(
@@ -357,11 +390,13 @@ private fun PartnerCard(
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
                 entry.sharedWithMe.forEach { item ->
+                    val label = item.record?.let { it.alias ?: it.deviceName } ?: "載入中…"
                     SharedDeviceRow(
-                        label = item.record?.let { it.alias ?: it.deviceName } ?: "載入中…",
+                        label = label,
                         batteryLevel = item.record?.batteryLevel,
                         receiveAlerts = item.shared.receiveAlerts,
-                        onToggleAlerts = { onSetReceiveAlerts(item.shared.id, it) }
+                        onToggleAlerts = { onSetReceiveAlerts(item.shared.id, it) },
+                        onRenameClick = { onRenameDevice(item.shared.deviceId, label) }
                     )
                 }
             }
@@ -416,7 +451,8 @@ private fun SharedDeviceRow(
     label: String,
     batteryLevel: Int?,
     receiveAlerts: Boolean,
-    onToggleAlerts: (Boolean) -> Unit
+    onToggleAlerts: (Boolean) -> Unit,
+    onRenameClick: () -> Unit
 ) {
     Row(
         modifier = Modifier
@@ -429,6 +465,10 @@ private fun SharedDeviceRow(
             batteryLevel?.let {
                 Text("電量：$it%", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
+        }
+        IconButton(onClick = onRenameClick, modifier = Modifier.size(32.dp)) {
+            Icon(Icons.Default.Edit, contentDescription = "設定別名", modifier = Modifier.size(16.dp),
+                tint = MaterialTheme.colorScheme.onSurfaceVariant)
         }
         Icon(
             if (receiveAlerts) Icons.Default.Notifications else Icons.Default.NotificationsOff,
