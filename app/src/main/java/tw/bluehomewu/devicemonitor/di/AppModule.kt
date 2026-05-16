@@ -88,7 +88,7 @@ object AppModule {
     val partnerStateHolder: PartnerStateHolder by lazy { PartnerStateHolder() }
 
     val realtimeRepository: RealtimeRepository by lazy {
-        RealtimeRepository(supabase, deviceStateHolder, partnerStateHolder, alertNotificationManager)
+        RealtimeRepository(supabase, deviceStateHolder, partnerStateHolder, alertNotificationManager, deviceRepository)
     }
 
     fun initialize(context: Context) {

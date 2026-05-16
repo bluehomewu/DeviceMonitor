@@ -19,7 +19,8 @@ class RealtimeRepository(
     private val supabase: SupabaseClient,
     private val deviceStateHolder: DeviceStateHolder,
     private val partnerStateHolder: PartnerStateHolder,
-    private val alertNotificationManager: AlertNotificationManager
+    private val alertNotificationManager: AlertNotificationManager,
+    private val deviceRepository: DeviceRepository
 ) {
     private var deviceChannel: RealtimeChannel? = null
     private var sharedChannel: RealtimeChannel? = null
@@ -94,6 +95,12 @@ class RealtimeRepository(
                     is PostgresAction.Insert -> runCatching {
                         val sd = action.decodeRecord<SharedDevice>()
                         partnerStateHolder.addSharedDevice(sd)
+                        if (sd.ownerUid != ownerUid) {
+                            runCatching {
+                                deviceRepository.fetchDevicesByIds(listOf(sd.deviceId))
+                                    .firstOrNull()?.let { partnerStateHolder.upsertSharedRecord(it) }
+                            }.onFailure { Log.e(TAG, "Fetch partner device record failed", it) }
+                        }
                         Log.d(TAG, "shared_devices INSERT: device=${sd.deviceId.take(8)}")
                     }.onFailure { Log.e(TAG, "shared_devices INSERT error", it) }
 

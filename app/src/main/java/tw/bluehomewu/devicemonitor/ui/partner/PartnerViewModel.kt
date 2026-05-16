@@ -2,6 +2,7 @@ package tw.bluehomewu.devicemonitor.ui.partner
 
 import android.graphics.Bitmap
 import android.graphics.Color
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
@@ -87,6 +88,23 @@ class PartnerViewModel(
             )
         }
     }.stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
+
+    init {
+        viewModelScope.launch {
+            partnerStateHolder.sharedDevices.collect { allShared ->
+                val missingIds = allShared
+                    .filter { it.ownerUid != myUid }
+                    .map { it.deviceId }
+                    .filter { id -> partnerStateHolder.sharedRecords.value[id] == null }
+                if (missingIds.isNotEmpty()) {
+                    runCatching {
+                        AppModule.deviceRepository.fetchDevicesByIds(missingIds)
+                            .forEach { partnerStateHolder.upsertSharedRecord(it) }
+                    }.onFailure { Log.e("PartnerVM", "fetchSharedRecords failed", it) }
+                }
+            }
+        }
+    }
 
     fun generateInvite(selectedDeviceIds: List<String>) {
         viewModelScope.launch {
