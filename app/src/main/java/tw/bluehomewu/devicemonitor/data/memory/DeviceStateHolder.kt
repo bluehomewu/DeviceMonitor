@@ -23,6 +23,13 @@ class DeviceStateHolder(private val prefs: SharedPreferences) {
     private val _devices = MutableStateFlow<List<DeviceRecord>>(emptyList())
     val devices: StateFlow<List<DeviceRecord>> = _devices.asStateFlow()
 
+    private val _isRealtimeConnected = MutableStateFlow(true)
+    val isRealtimeConnected: StateFlow<Boolean> = _isRealtimeConnected.asStateFlow()
+
+    fun setRealtimeConnected(connected: Boolean) {
+        _isRealtimeConnected.value = connected
+    }
+
     init {
         // Process 重啟時立刻還原上次快取，UI 不再空白
         val json = prefs.getString(PREF_KEY, null)

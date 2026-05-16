@@ -79,6 +79,8 @@ class DeviceListViewModel(
         initialValue = emptyList()
     )
 
+    val isRealtimeConnected: StateFlow<Boolean> = deviceStateHolder.isRealtimeConnected
+
     private val _isRefreshing = MutableStateFlow(false)
     val isRefreshing: StateFlow<Boolean> = _isRefreshing.asStateFlow()
 

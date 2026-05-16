@@ -10,6 +10,7 @@ import kotlinx.serialization.json.jsonPrimitive
 import io.github.jan.supabase.realtime.postgresChangeFlow
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEach
 import tw.bluehomewu.devicemonitor.data.memory.DeviceStateHolder
 import tw.bluehomewu.devicemonitor.data.memory.PartnerStateHolder
@@ -82,6 +83,10 @@ class RealtimeRepository(
                     else -> {}
                 }
             }
+            .launchIn(scope)
+        deviceChannel!!.status
+            .map { it == RealtimeChannel.Status.SUBSCRIBED }
+            .onEach { deviceStateHolder.setRealtimeConnected(it) }
             .launchIn(scope)
         deviceChannel!!.subscribe()
         Log.d(TAG, "Realtime 已訂閱 ch_devices:$ownerUid")
@@ -157,6 +162,7 @@ class RealtimeRepository(
     }
 
     suspend fun stopListening() {
+        deviceStateHolder.setRealtimeConnected(false)
         deviceChannel?.unsubscribe()
         sharedChannel?.unsubscribe()
         partnerChannel?.unsubscribe()
