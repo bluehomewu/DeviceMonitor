@@ -714,6 +714,21 @@ private fun ManageShareSheet(
                         .fillMaxWidth()
                         .heightIn(max = 240.dp)
                 ) {
+                    item {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Checkbox(
+                                checked = selected.size == availableDevices.size && availableDevices.isNotEmpty(),
+                                onCheckedChange = { all ->
+                                    if (all) { selected.clear(); selected.addAll(availableDevices.map { it.id }) }
+                                    else selected.clear()
+                                }
+                            )
+                            Text("全選", style = MaterialTheme.typography.bodyMedium)
+                        }
+                    }
                     items(availableDevices, key = { it.id }) { device ->
                         Row(
                             modifier = Modifier.fillMaxWidth(),
