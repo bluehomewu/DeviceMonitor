@@ -138,6 +138,8 @@
     <string name="notif_alert_text">電量剩 %1$d%%，低於警報閾值 %2$d%%</string>
     <string name="notif_full_charge_title">充滿電：%s</string>
     <string name="notif_full_charge_text">電量已達 100%%，可以拔除充電線了。</string>
+    <string name="notif_partner_shared_title">夥伴分享了新裝置</string>
+    <string name="notif_partner_shared_text">「%s」已分享給你。</string>
     <string name="notif_critical_title">緊急低電量：%s</string>
     <string name="notif_critical_text">電量剩 %1$d%%，已低於緊急閾值 %2$d%%！</string>
     <string name="notif_offline_title">裝置離線：%s</string>

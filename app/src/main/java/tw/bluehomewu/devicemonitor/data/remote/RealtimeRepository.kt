@@ -102,8 +102,11 @@ class RealtimeRepository(
                         partnerStateHolder.addSharedDevice(sd)
                         if (sd.ownerUid != ownerUid) {
                             runCatching {
-                                deviceRepository.fetchDevicesByIds(listOf(sd.deviceId))
-                                    .firstOrNull()?.let { partnerStateHolder.upsertSharedRecord(it) }
+                                val record = deviceRepository.fetchDevicesByIds(listOf(sd.deviceId)).firstOrNull()
+                                if (record != null) {
+                                    partnerStateHolder.upsertSharedRecord(record)
+                                    alertNotificationManager.postPartnerSharedAlert(record.alias ?: record.deviceName)
+                                }
                             }.onFailure { Log.e(TAG, "Fetch partner device record failed", it) }
                         }
                         Log.d(TAG, "shared_devices INSERT: device=${sd.deviceId.take(8)}")

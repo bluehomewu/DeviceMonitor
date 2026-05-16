@@ -180,6 +180,19 @@ class AlertNotificationManager(
                else hour >= start || hour < end
     }
 
+    fun postPartnerSharedAlert(deviceName: String) {
+        val notifId = "partner_share_${deviceName}".hashCode()
+        val notification = NotificationCompat.Builder(context, ALERT_CHANNEL_ID)
+            .setContentTitle(context.getString(R.string.notif_partner_shared_title))
+            .setContentText(context.getString(R.string.notif_partner_shared_text, deviceName))
+            .setSmallIcon(android.R.drawable.ic_dialog_info)
+            .setPriority(NotificationCompat.PRIORITY_DEFAULT)
+            .setAutoCancel(true)
+            .build()
+        nm.notify(notifId, notification)
+        Log.d(TAG, "夥伴分享裝置通知：$deviceName")
+    }
+
     private fun postCriticalAlert(deviceName: String, level: Int, threshold: Int, deviceId: String) {
         if (isInQuietHours()) { Log.d(TAG, "靜音時段，略過緊急低電量通知：$deviceName"); return }
         val notifId = "critical_${deviceId}".hashCode()

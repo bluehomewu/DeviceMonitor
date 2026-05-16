@@ -138,6 +138,8 @@
     <string name="notif_alert_text">Battery at %1$d%%, below threshold %2$d%%</string>
     <string name="notif_full_charge_title">Fully Charged: %s</string>
     <string name="notif_full_charge_text">Battery is at 100%% — you can unplug now.</string>
+    <string name="notif_partner_shared_title">Partner Shared a Device</string>
+    <string name="notif_partner_shared_text">"%s" is now shared with you.</string>
     <string name="notif_critical_title">Critical Battery: %s</string>
     <string name="notif_critical_text">Battery at %1$d%%, below critical level %2$d%%!</string>
     <string name="notif_offline_title">Device Offline: %s</string>
