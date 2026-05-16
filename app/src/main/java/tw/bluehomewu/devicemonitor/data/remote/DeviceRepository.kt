@@ -1,6 +1,7 @@
 package tw.bluehomewu.devicemonitor.data.remote
 
 import android.os.Build
+import android.util.Log
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.postgrest.from
 import tw.bluehomewu.devicemonitor.BuildConfig
@@ -60,7 +61,8 @@ class DeviceRepository(private val supabase: SupabaseClient) {
             supabase.from("devices").select {
                 filter { isIn("id", ids) }
             }.decodeList<DeviceRecord>()
-        }.getOrDefault(emptyList())
+        }.onFailure { Log.e("DeviceRepository", "fetchDevicesByIds failed (RLS?): ${it.message}") }
+         .getOrDefault(emptyList())
     }
 
     /** 標記裝置離線（Service 停止時呼叫）。 */
