@@ -18,6 +18,8 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+
+enum class DeviceSortOrder { DEFAULT, BATTERY_ASC, BATTERY_DESC, OFFLINE_FIRST }
 import tw.bluehomewu.devicemonitor.data.local.PinnedOrderManager
 import tw.bluehomewu.devicemonitor.data.memory.DeviceStateHolder
 import tw.bluehomewu.devicemonitor.data.remote.DeviceRecord
@@ -59,20 +61,33 @@ class DeviceListViewModel(
     private val _pinnedIds = MutableStateFlow(pinnedOrderManager.load())
     val pinnedIds: StateFlow<List<String>> = _pinnedIds.asStateFlow()
 
+    private val _sortOrder = MutableStateFlow(DeviceSortOrder.DEFAULT)
+    val sortOrder: StateFlow<DeviceSortOrder> = _sortOrder.asStateFlow()
+
+    fun setSortOrder(order: DeviceSortOrder) { _sortOrder.value = order }
+
     /**
      * Sorted device list:
      *   1. Current device (always first)
      *   2. Pinned devices (user-defined order)
-     *   3. Remaining devices
+     *   3. Remaining devices — sorted by [sortOrder]
      */
     val devices: StateFlow<List<DeviceRecord>> = combine(
-        deviceStateHolder.devices, _pinnedIds
-    ) { all, pinned ->
+        deviceStateHolder.devices, _pinnedIds, _sortOrder
+    ) { all, pinned, sort ->
         val current = all.find { it.deviceId == currentDeviceId }
         val pinnedSet = pinned.toSet()
         val pinnedDevices = pinned.mapNotNull { id -> all.find { it.id == id } }
         val rest = all.filter { it.deviceId != currentDeviceId && it.id !in pinnedSet }
-        listOfNotNull(current) + pinnedDevices + rest
+        val sortedRest = when (sort) {
+            DeviceSortOrder.DEFAULT      -> rest.sortedBy { it.deviceName }
+            DeviceSortOrder.BATTERY_ASC  -> rest.sortedBy { it.batteryLevel }
+            DeviceSortOrder.BATTERY_DESC -> rest.sortedByDescending { it.batteryLevel }
+            DeviceSortOrder.OFFLINE_FIRST -> rest.sortedWith(
+                compareBy<DeviceRecord> { it.isOnline }.thenBy { it.deviceName }
+            )
+        }
+        listOfNotNull(current) + pinnedDevices + sortedRest
     }.stateIn(
         scope = viewModelScope,
         started = SharingStarted.WhileSubscribed(5_000),

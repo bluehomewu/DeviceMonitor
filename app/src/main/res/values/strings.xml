@@ -88,6 +88,11 @@
     <!-- Device list screen -->
     <string name="realtime_disconnected_banner">Realtime disconnected — data may be stale</string>
     <string name="action_refresh">Refresh</string>
+    <string name="action_sort">Sort</string>
+    <string name="sort_default">Default (Name)</string>
+    <string name="sort_battery_asc">Battery: Low → High</string>
+    <string name="sort_battery_desc">Battery: High → Low</string>
+    <string name="sort_offline_first">Offline First</string>
     <string name="device_list_title">Device List (%d)</string>
     <string name="no_devices_hint">No device data\nWaiting for Realtime sync…</string>
     <string name="this_device">(This Device)</string>

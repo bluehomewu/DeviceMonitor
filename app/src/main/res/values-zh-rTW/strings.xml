@@ -88,6 +88,11 @@
     <!-- Device list screen -->
     <string name="realtime_disconnected_banner">Realtime 已斷線，資料可能不是最新</string>
     <string name="action_refresh">重新整理</string>
+    <string name="action_sort">排序</string>
+    <string name="sort_default">預設（名稱）</string>
+    <string name="sort_battery_asc">電量：低 → 高</string>
+    <string name="sort_battery_desc">電量：高 → 低</string>
+    <string name="sort_offline_first">離線優先</string>
     <string name="device_list_title">監控清單（%d 台）</string>
     <string name="no_devices_hint">尚無裝置資料\n請稍候 Realtime 同步…</string>
     <string name="this_device">（本機）</string>

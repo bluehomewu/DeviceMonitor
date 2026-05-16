@@ -40,9 +40,12 @@ import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.PushPin
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Share
+import androidx.compose.material.icons.filled.Sort
 import androidx.compose.material.icons.filled.WifiOff
 import androidx.compose.material.icons.outlined.PushPin
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Card
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
@@ -168,6 +171,7 @@ fun DeviceListScreen(
     val isRefreshing by vm.isRefreshing.collectAsStateWithLifecycle()
     val isRealtimeConnected by vm.isRealtimeConnected.collectAsStateWithLifecycle()
     val selectedIds by vm.selectedIds.collectAsStateWithLifecycle()
+    val sortOrder by vm.sortOrder.collectAsStateWithLifecycle()
 
     val listState = rememberLazyListState()
     val dragState = remember(listState) { DragDropState(listState) }
@@ -254,6 +258,45 @@ fun DeviceListScreen(
                         )
                     ) {
                         Text(stringResource(R.string.delete_selected_button, selectedIds.size))
+                    }
+                }
+                var sortMenuExpanded by remember { mutableStateOf(false) }
+                androidx.compose.foundation.layout.Box {
+                    IconButton(onClick = { sortMenuExpanded = true }) {
+                        Icon(Icons.Default.Sort, contentDescription = stringResource(R.string.action_sort))
+                    }
+                    DropdownMenu(
+                        expanded = sortMenuExpanded,
+                        onDismissRequest = { sortMenuExpanded = false }
+                    ) {
+                        DropdownMenuItem(
+                            text = { Text(stringResource(R.string.sort_default)) },
+                            onClick = { vm.setSortOrder(DeviceSortOrder.DEFAULT); sortMenuExpanded = false },
+                            trailingIcon = if (sortOrder == DeviceSortOrder.DEFAULT) ({
+                                Icon(Icons.Default.Circle, contentDescription = null, modifier = Modifier.size(8.dp))
+                            }) else null
+                        )
+                        DropdownMenuItem(
+                            text = { Text(stringResource(R.string.sort_battery_asc)) },
+                            onClick = { vm.setSortOrder(DeviceSortOrder.BATTERY_ASC); sortMenuExpanded = false },
+                            trailingIcon = if (sortOrder == DeviceSortOrder.BATTERY_ASC) ({
+                                Icon(Icons.Default.Circle, contentDescription = null, modifier = Modifier.size(8.dp))
+                            }) else null
+                        )
+                        DropdownMenuItem(
+                            text = { Text(stringResource(R.string.sort_battery_desc)) },
+                            onClick = { vm.setSortOrder(DeviceSortOrder.BATTERY_DESC); sortMenuExpanded = false },
+                            trailingIcon = if (sortOrder == DeviceSortOrder.BATTERY_DESC) ({
+                                Icon(Icons.Default.Circle, contentDescription = null, modifier = Modifier.size(8.dp))
+                            }) else null
+                        )
+                        DropdownMenuItem(
+                            text = { Text(stringResource(R.string.sort_offline_first)) },
+                            onClick = { vm.setSortOrder(DeviceSortOrder.OFFLINE_FIRST); sortMenuExpanded = false },
+                            trailingIcon = if (sortOrder == DeviceSortOrder.OFFLINE_FIRST) ({
+                                Icon(Icons.Default.Circle, contentDescription = null, modifier = Modifier.size(8.dp))
+                            }) else null
+                        )
                     }
                 }
                 IconButton(onClick = onPairDevice) {
