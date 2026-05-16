@@ -7,7 +7,7 @@
 create policy "partner can read shared devices"
   on devices for select
   using (
-    id in (
+    id::text in (
       select sd.device_id
       from shared_devices sd
       join partnerships p on sd.partnership_id = p.id
