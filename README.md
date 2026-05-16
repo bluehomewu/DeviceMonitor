@@ -17,6 +17,7 @@ No self-hosted server required — just sign in with a Google account and start 
 - Device alias: set a custom display name for each device
 - **Pinned devices**: your own device is always at the top; swipe right on any card to pin it; pinned devices support long-press drag-to-reorder
 - **Delete device**: enable delete mode in settings to reveal a delete button on each card (swipe right); supports multi-select — tap cards to select, then tap the header button to batch-delete; delete mode auto-disables 60 seconds after the last deletion
+- **Partner mode**: share device monitoring across different Google accounts — generate an invite code, let the other person scan or enter it, and their devices appear in your monitor list (and vice versa)
 - **In-app update**: automatically checks for new versions on launch; download and install the APK without leaving the app
 - **Beta update channel**: opt in to receive beta releases (tagged with `-beta`) instead of stable-only updates
 - Continuous background monitoring — uploads status even when the screen is off
@@ -67,6 +68,19 @@ Your own device is always fixed at the very top of the list and cannot be displa
 
 ---
 
+## Partner Mode
+
+Partner mode lets two users on **different Google accounts** monitor each other's devices.
+
+1. One user opens the **Partner** tab → **Create Invite**
+2. Share the generated code with the other user
+3. The other user opens the **Partner** tab → **Join with Code** → enters the code
+4. Both users can now see each other's shared devices in their monitor list
+
+Each partner can independently control which of their own devices are shared and whether the partner receives low-battery alerts for those devices.
+
+---
+
 ## Recommended Settings (for better background survival)
 
 Go to **Settings → Apps → Device Monitor** on each phone and apply:
@@ -99,3 +113,35 @@ Go to **Settings → Apps → Device Monitor** on each phone and apply:
 - All device data is stored in Supabase and isolated by Google account UID
 - Data from different accounts is completely separate and mutually inaccessible
 - No personally identifiable information beyond what is required for authentication is collected
+
+---
+
+## For Maintainers
+
+### Force Re-signin Flag
+
+**File:** `app/src/main/java/tw/bluehomewu/devicemonitor/AppConfig.kt`
+
+```kotlin
+object AppConfig {
+    const val FORCE_RESIGN_FROM_VERSION: String? = "1.13.0"
+}
+```
+
+Setting `FORCE_RESIGN_FROM_VERSION` to a version string forces all existing users to sign out and re-authenticate the next time they launch the app. A toast message is shown explaining why.
+
+**When to use:** after a backend migration (e.g. switching to a self-hosted Supabase instance), an auth schema change, or any other event that invalidates existing sessions.
+
+**How to trigger re-signin in the next release:**
+
+1. Open `AppConfig.kt`
+2. Set `FORCE_RESIGN_FROM_VERSION` to the new version string (e.g. `"1.14.0"`)
+3. Ship the release
+
+**Behaviour:**
+- Users with an existing session are signed out automatically on first launch; a toast appears: *"版本更新後需重新登入，請重新登入"*
+- Users on a fresh install are **not** affected (no session to clear)
+- Once the user signs back in, the version is recorded in SharedPreferences (`force_resign_done_for`); subsequent launches are unaffected
+- Setting the constant back to `null` disables the feature entirely
+
+**To trigger again in a future version:** change the value to that version's string (e.g. `"1.15.0"`). Any user whose stored value differs from the new string will be forced to re-signin once more.
