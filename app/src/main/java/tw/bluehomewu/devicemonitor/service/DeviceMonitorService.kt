@@ -67,6 +67,14 @@ class DeviceMonitorService : Service() {
     @Volatile private var cachedUid: String? = null
 
     /**
+     * Upsert 失敗重試：保留最後一次失敗的裝置快照，於背景以指數退避重傳。
+     * 只需保留最新快照，因為新的心跳/事件已涵蓋舊狀態。
+     */
+    @Volatile private var pendingRetry: DeviceInfo? = null
+    @Volatile private var retryAttempt = 0
+    @Volatile private var nextRetryMs = 0L
+
+    /**
      * 防止多個 coroutine 同時觸發靜默重登（Layer 3）。
      * tryLock() 失敗時直接跳過，由成功拿到鎖的 coroutine 執行。
      */
@@ -98,6 +106,8 @@ class DeviceMonitorService : Service() {
         private const val SILENT_REAUTH_COOLDOWN_HUNG_MS  = 300_000L  // 逾時後冷卻 5 分鐘（Credential Manager 卡住）
         private const val SILENT_REAUTH_COOLDOWN_FAIL_MS  = 60_000L   // 乾淨失敗後冷卻 1 分鐘（暫時性網路錯誤）
         private const val SESSION_WATCHDOG_INTERVAL_MS    = 5_000L    // Session 看門狗檢查間隔
+        private const val RETRY_CHECK_INTERVAL_MS         = 5_000L    // 重試佇列檢查間隔
+        private val RETRY_DELAYS_MS = longArrayOf(15_000L, 30_000L, 60_000L, 120_000L)
 
         private val _isRunning = MutableStateFlow(false)
         val isRunning: StateFlow<Boolean> = _isRunning.asStateFlow()
@@ -392,6 +402,34 @@ class DeviceMonitorService : Service() {
                 }.onFailure { Log.e(TAG, "定時刷新失敗", it) }
             }
         }
+
+        // 失敗重試佇列：以指數退避重傳最後一次失敗的裝置快照
+        scope.launch {
+            while (isActive) {
+                delay(RETRY_CHECK_INTERVAL_MS)
+                val pending = pendingRetry ?: continue
+                if (System.currentTimeMillis() < nextRetryMs) continue
+                val uid = ensureValidSession() ?: continue
+                val ownerUid = AppModule.groupUidManager.get() ?: uid
+                Log.d(TAG, "[Retry #$retryAttempt] 嘗試重傳：電量=${pending.batteryLevel}%")
+                runCatching {
+                    deviceRepository.upsertDevice(ownerUid, AppModule.thisDeviceId, pending, simOperator)
+                    Log.i(TAG, "[Retry #$retryAttempt] 重傳成功")
+                    pendingRetry = null
+                    retryAttempt = 0
+                }.onFailure { e ->
+                    retryAttempt++
+                    if (retryAttempt >= RETRY_DELAYS_MS.size) {
+                        Log.w(TAG, "[Retry] 已達最大重試次數，放棄：${e.message}")
+                        pendingRetry = null
+                        retryAttempt = 0
+                    } else {
+                        nextRetryMs = System.currentTimeMillis() + RETRY_DELAYS_MS[retryAttempt]
+                        Log.w(TAG, "[Retry #$retryAttempt] 重傳失敗，${RETRY_DELAYS_MS[retryAttempt] / 1000}s 後再試：${e.message}")
+                    }
+                }
+            }
+        }
     }
 
     private fun syncToSupabase(info: DeviceInfo, reason: String) {
@@ -406,8 +444,12 @@ class DeviceMonitorService : Service() {
             runCatching {
                 deviceRepository.upsertDevice(ownerUid, AppModule.thisDeviceId, info, simOperator)
                 Log.d(TAG, "[$reason] upsert 成功：電量=${info.batteryLevel}% 網路=${info.networkType}")
+                pendingRetry = null
+                retryAttempt = 0
             }.onFailure { e ->
                 Log.e(TAG, "[$reason] upsert 失敗：${e::class.simpleName} — ${e.message}")
+                pendingRetry = info
+                if (retryAttempt == 0) nextRetryMs = System.currentTimeMillis() + RETRY_DELAYS_MS[0]
             }
             updateNotification(info)
         }
