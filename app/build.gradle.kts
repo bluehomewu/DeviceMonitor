@@ -24,8 +24,8 @@ android {
         applicationId = "tw.bluehomewu.devicemonitor"
         minSdk = 29
         targetSdk = 36
-        versionCode = 37
-        versionName = "1.15.3"
+        versionCode = 38
+        versionName = "1.16.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
@@ -102,8 +102,10 @@ dependencies {
     implementation(libs.credentials.play.services)
     implementation(libs.googleid)
 
-    // QR Code 產生（夥伴模式邀請碼）
+    // QR Code 產生 + 掃描（夥伴模式邀請碼）
     implementation(libs.zxing.core)
+    @Suppress("UseTomlInstead")
+    implementation("com.journeyapps:zxing-android-embedded:4.3.0")
 
     // Test
     testImplementation(libs.junit)

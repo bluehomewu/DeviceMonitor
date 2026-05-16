@@ -61,11 +61,14 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.ui.graphics.painter.BitmapPainter
+import com.journeyapps.barcodescanner.ScanContract
+import com.journeyapps.barcodescanner.ScanOptions
 import kotlinx.coroutines.launch
 import tw.bluehomewu.devicemonitor.data.remote.DeviceRecord
 import tw.bluehomewu.devicemonitor.data.remote.PartnerRepository
@@ -523,6 +526,12 @@ private fun JoinSheet(
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     var input by remember { mutableStateOf("") }
 
+    val scanLauncher = rememberLauncherForActivityResult(ScanContract()) { result ->
+        val scanned = result.contents ?: return@rememberLauncherForActivityResult
+        val filtered = scanned.filter { it.isLetterOrDigit() }.uppercase().take(8)
+        if (filtered.length == 8) input = filtered
+    }
+
     ModalBottomSheet(onDismissRequest = { if (!isLoading) onDismiss() }, sheetState = sheetState) {
         Column(
             modifier = Modifier
@@ -532,26 +541,45 @@ private fun JoinSheet(
         ) {
             Text("加入夥伴", style = MaterialTheme.typography.titleLarge)
             Text(
-                "請輸入夥伴裝置上顯示的 8 碼邀請碼",
+                "請輸入夥伴裝置上顯示的 8 碼邀請碼，或掃描 QR Code",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
-            OutlinedTextField(
-                value = input,
-                onValueChange = { v ->
-                    val filtered = v.filter { it.isLetterOrDigit() }.uppercase()
-                    if (filtered.length <= 8) input = filtered
-                },
-                label = { Text("邀請碼") },
-                placeholder = { Text("ABCD1234") },
-                singleLine = true,
-                keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Characters),
-                textStyle = MaterialTheme.typography.headlineSmall.copy(
-                    fontFamily = FontFamily.Monospace,
-                    letterSpacing = 4.sp
-                ),
-                modifier = Modifier.fillMaxWidth()
-            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                OutlinedTextField(
+                    value = input,
+                    onValueChange = { v ->
+                        val filtered = v.filter { it.isLetterOrDigit() }.uppercase()
+                        if (filtered.length <= 8) input = filtered
+                    },
+                    label = { Text("邀請碼") },
+                    placeholder = { Text("ABCD1234") },
+                    singleLine = true,
+                    keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Characters),
+                    textStyle = MaterialTheme.typography.headlineSmall.copy(
+                        fontFamily = FontFamily.Monospace,
+                        letterSpacing = 4.sp
+                    ),
+                    modifier = Modifier.weight(1f)
+                )
+                Spacer(Modifier.width(8.dp))
+                IconButton(
+                    onClick = {
+                        scanLauncher.launch(
+                            ScanOptions().apply {
+                                setPrompt("掃描邀請碼 QR Code")
+                                setBeepEnabled(false)
+                                setOrientationLocked(false)
+                            }
+                        )
+                    }
+                ) {
+                    Icon(Icons.Default.QrCode, contentDescription = "掃描 QR Code")
+                }
+            }
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
