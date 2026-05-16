@@ -101,6 +101,13 @@ class MainActivity : ComponentActivity() {
                         authVm.tryAutoSignIn(this@MainActivity)
                     }
 
+                    val context = androidx.compose.ui.platform.LocalContext.current
+                    LaunchedEffect(Unit) {
+                        authVm.toastEvent.collect { message ->
+                            android.widget.Toast.makeText(context, message, android.widget.Toast.LENGTH_LONG).show()
+                        }
+                    }
+
                     when (authState) {
                         AuthState.Loading -> {
                             Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {

@@ -2,6 +2,8 @@ package tw.bluehomewu.devicemonitor.ui.auth
 
 import android.app.Activity
 import android.app.Application
+import android.content.Context
+import android.content.SharedPreferences
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
@@ -9,18 +11,26 @@ import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.auth.auth
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.JsonPrimitive
+import tw.bluehomewu.devicemonitor.AppConfig
 import tw.bluehomewu.devicemonitor.auth.GoogleAuthManager
 import tw.bluehomewu.devicemonitor.di.AppModule
 
 class AuthViewModel(
     private val supabase: SupabaseClient,
-    private val googleAuthManager: GoogleAuthManager
+    private val googleAuthManager: GoogleAuthManager,
+    private val prefs: SharedPreferences
 ) : ViewModel() {
+
+    private val _toastEvent = MutableSharedFlow<String>(extraBufferCapacity = 1)
+    val toastEvent: SharedFlow<String> = _toastEvent.asSharedFlow()
 
     private val _state = MutableStateFlow<AuthState>(AuthState.Loading)
     val state: StateFlow<AuthState> = _state.asStateFlow()
@@ -40,6 +50,18 @@ class AuthViewModel(
         if (autoSignInAttempted) return
         autoSignInAttempted = true
         viewModelScope.launch {
+            // 0. 強制重登檢查：版本更新後若 flag 啟用，清除 session 並提示使用者
+            if (isForceResignRequired()) {
+                runCatching { googleAuthManager.signOut() }
+                AppModule.deviceStateHolder.clear()
+                AppModule.sessionBackupManager.clearBackup()
+                AppModule.groupUidManager.clear()
+                markForceResignDone()
+                _toastEvent.tryEmit("版本更新後需重新登入，請重新登入")
+                _state.value = AuthState.LoggedOut
+                return@launch
+            }
+
             // 1. 檢查既有 in-memory session（既登入過且未登出）
             val session = supabase.auth.currentSessionOrNull()
             if (session != null) {
@@ -51,6 +73,7 @@ class AuthViewModel(
             googleAuthManager.silentSignIn(activity)
                 .onSuccess {
                     val user = supabase.auth.currentUserOrNull()
+                    markForceResignDone()
                     _state.value = AuthState.LoggedIn(user?.id ?: "", extractDisplayName(user))
                 }
                 .onFailure {
@@ -60,12 +83,31 @@ class AuthViewModel(
         }
     }
 
+    /**
+     * Returns true if FORCE_RESIGN_FROM_VERSION is set and the user hasn't
+     * re-authenticated since that version was deployed.
+     * Only triggers when a prior session exists (skip on fresh installs).
+     */
+    private suspend fun isForceResignRequired(): Boolean {
+        val target = AppConfig.FORCE_RESIGN_FROM_VERSION ?: return false
+        val stored = prefs.getString(KEY_FORCE_RESIGN_DONE_FOR, null)
+        if (stored == target) return false
+        // Only force resign if there is an existing session to clear
+        return supabase.auth.currentSessionOrNull() != null
+    }
+
+    private fun markForceResignDone() {
+        val target = AppConfig.FORCE_RESIGN_FROM_VERSION ?: return
+        prefs.edit().putString(KEY_FORCE_RESIGN_DONE_FOR, target).apply()
+    }
+
     fun signIn(activity: Activity) {
         viewModelScope.launch {
             _state.value = AuthState.Loading
             googleAuthManager.signIn(activity)
                 .onSuccess {
                     val user = supabase.auth.currentUserOrNull()
+                    markForceResignDone()
                     _state.value = AuthState.LoggedIn(user?.id ?: "", extractDisplayName(user))
                 }
                 .onFailure { e ->
@@ -124,12 +166,14 @@ class AuthViewModel(
     }
 
     companion object {
+        private const val KEY_FORCE_RESIGN_DONE_FOR = "force_resign_done_for"
+
         fun factory(application: Application): ViewModelProvider.Factory = viewModelFactory {
             initializer {
-                val supabase = AppModule.supabase
                 AuthViewModel(
-                    supabase = supabase,
-                    googleAuthManager = AppModule.googleAuthManager
+                    supabase = AppModule.supabase,
+                    googleAuthManager = AppModule.googleAuthManager,
+                    prefs = application.getSharedPreferences("app_prefs", Context.MODE_PRIVATE)
                 )
             }
         }
