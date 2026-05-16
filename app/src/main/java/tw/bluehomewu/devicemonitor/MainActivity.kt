@@ -47,9 +47,11 @@ import tw.bluehomewu.devicemonitor.ui.auth.AuthViewModel
 import tw.bluehomewu.devicemonitor.ui.auth.LoginScreen
 import tw.bluehomewu.devicemonitor.ui.devices.DeviceListScreen
 import tw.bluehomewu.devicemonitor.ui.devices.DeviceListViewModel
+import tw.bluehomewu.devicemonitor.data.remote.DeviceRecord
 import tw.bluehomewu.devicemonitor.ui.pairing.PairingInviteDialog
 import tw.bluehomewu.devicemonitor.ui.partner.PartnerScreen
 import tw.bluehomewu.devicemonitor.ui.partner.PartnerViewModel
+import tw.bluehomewu.devicemonitor.ui.partner.ShareDeviceSheet
 import tw.bluehomewu.devicemonitor.ui.theme.DeviceMonitorTheme
 
 private enum class MainTab { MY_DEVICE, ALL_DEVICES, PARTNER }
@@ -131,20 +133,19 @@ class MainActivity : ComponentActivity() {
                             )
                             var selectedTab by rememberSaveable { mutableStateOf(MainTab.MY_DEVICE) }
                             var showPairingDialog by remember { mutableStateOf(false) }
-
-                            // 有 active 夥伴才顯示 PARTNER tab；失去夥伴時跳回 MY_DEVICE
-                            val partners by partnerVm.partners.collectAsStateWithLifecycle()
-                            val hasPartners = partners.isNotEmpty()
-                            LaunchedEffect(hasPartners) {
-                                if (!hasPartners && selectedTab == MainTab.PARTNER) {
-                                    selectedTab = MainTab.MY_DEVICE
-                                }
-                            }
+                            var shareTargetDevice by remember { mutableStateOf<DeviceRecord?>(null) }
 
                             if (showPairingDialog) {
                                 PairingInviteDialog(
                                     ownerUid = userId,
                                     onDismiss = { showPairingDialog = false }
+                                )
+                            }
+                            shareTargetDevice?.let { device ->
+                                ShareDeviceSheet(
+                                    device = device,
+                                    partnerVm = partnerVm,
+                                    onDismiss = { shareTargetDevice = null }
                                 )
                             }
 
@@ -176,17 +177,14 @@ class MainActivity : ComponentActivity() {
                                             },
                                             label = { Text(stringResource(R.string.tab_device_list)) }
                                         )
-                                        // 有夥伴才顯示此 Tab
-                                        if (hasPartners) {
-                                            NavigationBarItem(
-                                                selected = selectedTab == MainTab.PARTNER,
-                                                onClick = { selectedTab = MainTab.PARTNER },
-                                                icon = {
-                                                    Icon(Icons.Default.Favorite, contentDescription = null)
-                                                },
-                                                label = { Text("夥伴") }
-                                            )
-                                        }
+                                        NavigationBarItem(
+                                            selected = selectedTab == MainTab.PARTNER,
+                                            onClick = { selectedTab = MainTab.PARTNER },
+                                            icon = {
+                                                Icon(Icons.Default.Favorite, contentDescription = null)
+                                            },
+                                            label = { Text("夥伴") }
+                                        )
                                     }
                                 }
                             ) { innerPadding ->
@@ -204,7 +202,8 @@ class MainActivity : ComponentActivity() {
                                         DeviceListScreen(
                                             modifier = Modifier.padding(innerPadding),
                                             vm = listVm,
-                                            onPairDevice = { showPairingDialog = true }
+                                            onPairDevice = { showPairingDialog = true },
+                                            onShareDevice = { shareTargetDevice = it }
                                         )
                                     MainTab.PARTNER ->
                                         PartnerScreen(

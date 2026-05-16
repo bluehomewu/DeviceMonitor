@@ -156,7 +156,8 @@ private class DragDropState(private val lazyListState: LazyListState) {
 fun DeviceListScreen(
     modifier: Modifier = Modifier,
     vm: DeviceListViewModel = viewModel(factory = DeviceListViewModel.factory()),
-    onPairDevice: () -> Unit = {}
+    onPairDevice: () -> Unit = {},
+    onShareDevice: (DeviceRecord) -> Unit = {}
 ) {
     val devices by vm.devices.collectAsStateWithLifecycle()
     val pinnedIds by vm.pinnedIds.collectAsStateWithLifecycle()
@@ -316,6 +317,18 @@ fun DeviceListScreen(
                                 )
                             }
                         },
+                        shareAction = {
+                            IconButton(onClick = {
+                                onShareDevice(dev)
+                                swipedOpenId = null
+                            }) {
+                                Icon(
+                                    imageVector = Icons.Default.Share,
+                                    contentDescription = "分享裝置",
+                                    tint = MaterialTheme.colorScheme.secondary
+                                )
+                            }
+                        },
                         deleteAction = if (isDeleteEnabled) ({
                             IconButton(onClick = {
                                 deletePendingDevice = dev
@@ -373,6 +386,18 @@ fun DeviceListScreen(
                                 )
                             }
                         },
+                        shareAction = {
+                            IconButton(onClick = {
+                                onShareDevice(dev)
+                                swipedOpenId = null
+                            }) {
+                                Icon(
+                                    imageVector = Icons.Default.Share,
+                                    contentDescription = "分享裝置",
+                                    tint = MaterialTheme.colorScheme.secondary
+                                )
+                            }
+                        },
                         deleteAction = if (isDeleteEnabled) ({
                             IconButton(onClick = {
                                 deletePendingDevice = dev
@@ -417,15 +442,17 @@ private fun SwipeRevealCard(
     onOpen: () -> Unit,
     onClose: () -> Unit,
     pinAction: @Composable () -> Unit,
+    shareAction: (@Composable () -> Unit)? = null,
     deleteAction: (@Composable () -> Unit)? = null,
     modifier: Modifier = Modifier,
     content: @Composable () -> Unit
 ) {
     val scope = rememberCoroutineScope()
-    val revealWidth = if (deleteAction != null) REVEAL_WIDTH * 2 else REVEAL_WIDTH
+    val actionCount = 1 + (if (shareAction != null) 1 else 0) + (if (deleteAction != null) 1 else 0)
+    val revealWidth = REVEAL_WIDTH * actionCount
     val revealPx = with(androidx.compose.ui.platform.LocalDensity.current) { revealWidth.toPx() }
-    // Reset animation offset when reveal width changes (delete mode toggled)
-    val offsetX = remember(deleteAction != null) { androidx.compose.animation.core.Animatable(0f) }
+    // Reset animation offset when visible action count changes
+    val offsetX = remember(shareAction != null, deleteAction != null) { androidx.compose.animation.core.Animatable(0f) }
 
     // Sync open/close state from parent
     androidx.compose.runtime.LaunchedEffect(isOpen) {
@@ -433,7 +460,7 @@ private fun SwipeRevealCard(
     }
 
     Box(modifier = modifier) {
-        // Actions revealed on the left (pin + optional delete)
+        // Actions revealed on the left (pin + optional share + optional delete)
         androidx.compose.foundation.layout.Row(
             modifier = Modifier
                 .align(Alignment.CenterStart)
@@ -443,6 +470,12 @@ private fun SwipeRevealCard(
                 modifier = Modifier.size(REVEAL_WIDTH),
                 contentAlignment = Alignment.Center
             ) { pinAction() }
+            shareAction?.let { action ->
+                Box(
+                    modifier = Modifier.size(REVEAL_WIDTH),
+                    contentAlignment = Alignment.Center
+                ) { action() }
+            }
             deleteAction?.let { action ->
                 Box(
                     modifier = Modifier.size(REVEAL_WIDTH),
