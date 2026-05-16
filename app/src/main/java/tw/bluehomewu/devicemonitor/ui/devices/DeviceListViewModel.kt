@@ -139,6 +139,11 @@ class DeviceListViewModel(
         }
     }
 
+    fun setAlertThresholdForSelected(threshold: Int) {
+        val ids = _selectedIds.value.toList()
+        ids.forEach { id -> setAlertThreshold(id, threshold) }
+    }
+
     fun setAlias(deviceId: String, alias: String) {
         val trimmed = alias.trim().takeIf { it.isNotEmpty() }
         deviceStateHolder.updateAlias(deviceId, trimmed)

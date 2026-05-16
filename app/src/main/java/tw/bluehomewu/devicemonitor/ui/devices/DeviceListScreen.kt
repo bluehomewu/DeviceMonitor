@@ -196,6 +196,8 @@ fun DeviceListScreen(
     // Delete confirmation dialogs
     var deletePendingDevice by remember { mutableStateOf<DeviceRecord?>(null) }
     var showBatchDeleteDialog by remember { mutableStateOf(false) }
+    var showBatchThresholdDialog by remember { mutableStateOf(false) }
+    var batchThresholdValue by remember { mutableIntStateOf(20) }
     deletePendingDevice?.let { dev ->
         AlertDialog(
             onDismissRequest = { deletePendingDevice = null },
@@ -236,6 +238,34 @@ fun DeviceListScreen(
             }
         )
     }
+    if (showBatchThresholdDialog) {
+        AlertDialog(
+            onDismissRequest = { showBatchThresholdDialog = false },
+            title = { Text(stringResource(R.string.batch_threshold_title)) },
+            text = {
+                androidx.compose.foundation.layout.Column {
+                    Text(stringResource(R.string.batch_threshold_label, batchThresholdValue))
+                    Slider(
+                        value = batchThresholdValue.toFloat(),
+                        onValueChange = { batchThresholdValue = it.toInt() },
+                        valueRange = 10f..100f,
+                        steps = 8
+                    )
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    vm.setAlertThresholdForSelected(batchThresholdValue)
+                    showBatchThresholdDialog = false
+                }) { Text(stringResource(R.string.action_save)) }
+            },
+            dismissButton = {
+                TextButton(onClick = { showBatchThresholdDialog = false }) {
+                    Text(stringResource(R.string.action_cancel))
+                }
+            }
+        )
+    }
 
     Column(modifier = modifier.fillMaxSize()) {
         Row(
@@ -251,6 +281,12 @@ fun DeviceListScreen(
             )
             Row(verticalAlignment = Alignment.CenterVertically) {
                 if (isDeleteEnabled && selectedIds.isNotEmpty()) {
+                    TextButton(onClick = {
+                        batchThresholdValue = 20
+                        showBatchThresholdDialog = true
+                    }) {
+                        Text(stringResource(R.string.batch_threshold_button))
+                    }
                     TextButton(
                         onClick = { showBatchDeleteDialog = true },
                         colors = androidx.compose.material3.ButtonDefaults.textButtonColors(

@@ -63,6 +63,9 @@
     <string name="delete_selected_title">刪除選取的裝置？</string>
     <string name="delete_selected_text">確定要永久刪除 %d 台裝置嗎？</string>
     <string name="delete_selected_button">刪除（%d）</string>
+    <string name="batch_threshold_button">設定閾值</string>
+    <string name="batch_threshold_title">批次設定警報閾值</string>
+    <string name="batch_threshold_label">警報閾值：%d%%</string>
 
     <!-- Beta update section -->
     <string name="section_beta_update">Beta 更新</string>
