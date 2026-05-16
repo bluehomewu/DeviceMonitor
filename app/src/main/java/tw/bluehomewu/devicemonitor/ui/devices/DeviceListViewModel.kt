@@ -1,7 +1,9 @@
 package tw.bluehomewu.devicemonitor.ui.devices
 
+import android.app.Application
+import android.content.Context
 import android.util.Log
-import androidx.lifecycle.ViewModel
+import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.viewmodel.initializer
@@ -18,20 +20,21 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
-
-enum class DeviceSortOrder { DEFAULT, BATTERY_ASC, BATTERY_DESC, OFFLINE_FIRST }
 import tw.bluehomewu.devicemonitor.data.local.PinnedOrderManager
 import tw.bluehomewu.devicemonitor.data.memory.DeviceStateHolder
 import tw.bluehomewu.devicemonitor.data.remote.DeviceRecord
 import tw.bluehomewu.devicemonitor.data.remote.DeviceRepository
 import tw.bluehomewu.devicemonitor.di.AppModule
 
+enum class DeviceSortOrder { DEFAULT, BATTERY_ASC, BATTERY_DESC, OFFLINE_FIRST }
+
 class DeviceListViewModel(
+    application: Application,
     private val supabase: SupabaseClient,
     private val deviceStateHolder: DeviceStateHolder,
     private val deviceRepository: DeviceRepository,
     private val pinnedOrderManager: PinnedOrderManager
-) : ViewModel() {
+) : AndroidViewModel(application) {
 
     companion object {
         private const val TAG = "DeviceListViewModel"
@@ -39,7 +42,9 @@ class DeviceListViewModel(
 
         fun factory(): ViewModelProvider.Factory = viewModelFactory {
             initializer {
+                val app = this[androidx.lifecycle.ViewModelProvider.AndroidViewModelFactory.APPLICATION_KEY]!!
                 DeviceListViewModel(
+                    application = app,
                     supabase = AppModule.supabase,
                     deviceStateHolder = AppModule.deviceStateHolder,
                     deviceRepository = AppModule.deviceRepository,
@@ -142,6 +147,18 @@ class DeviceListViewModel(
     fun setAlertThresholdForSelected(threshold: Int) {
         val ids = _selectedIds.value.toList()
         ids.forEach { id -> setAlertThreshold(id, threshold) }
+    }
+
+    private val criticalPrefs = getApplication<Application>()
+        .getSharedPreferences("app_prefs", Context.MODE_PRIVATE)
+
+    fun getCriticalThreshold(deviceId: String, warningThreshold: Int): Int {
+        val v = criticalPrefs.getInt("critical_threshold_$deviceId", -1)
+        return if (v < 0) (warningThreshold / 2).coerceAtLeast(10) else v
+    }
+
+    fun setCriticalThreshold(deviceId: String, threshold: Int) {
+        criticalPrefs.edit().putInt("critical_threshold_$deviceId", threshold).apply()
     }
 
     fun setAlias(deviceId: String, alias: String) {

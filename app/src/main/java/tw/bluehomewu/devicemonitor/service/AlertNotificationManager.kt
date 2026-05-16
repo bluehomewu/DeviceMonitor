@@ -25,8 +25,14 @@ class AlertNotificationManager(
     private val prefs = context.getSharedPreferences("app_prefs", Context.MODE_PRIVATE)
 
     private val lastNotifiedLevel = mutableMapOf<String, Int>()
+    private val lastNotifiedCritical = mutableSetOf<String>()
     private val fullChargeNotified = mutableSetOf<String>()
     private val lastOnlineState = mutableMapOf<String, Boolean>()
+
+    private fun getCriticalThreshold(deviceId: String, fallback: Int): Int {
+        val v = prefs.getInt("critical_threshold_$deviceId", -1)
+        return if (v < 0) (fallback / 2).coerceAtLeast(10) else v
+    }
 
     fun createChannel() {
         val channel = NotificationChannel(
@@ -75,29 +81,30 @@ class AlertNotificationManager(
             fullChargeNotified.remove(deviceId)
         }
 
+        val criticalThreshold = getCriticalThreshold(deviceId, threshold)
+
         if (level < threshold) {
             if (record.isCharging) {
-                // Charging will resolve the low battery — suppress notifications and reset state
-                // so that if charging stops while still below threshold we fire a fresh alert.
-                if (lastNotifiedLevel.remove(deviceId) != null) {
-                    Log.d(TAG, "${record.deviceName} 充電中（$level%），清除通知狀態，等待充電結束或超過閾值")
-                } else {
-                    Log.d(TAG, "${record.deviceName} 充電中（$level% < $threshold%），略過通知")
+                if (lastNotifiedLevel.remove(deviceId) != null || lastNotifiedCritical.remove(deviceId)) {
+                    Log.d(TAG, "${record.deviceName} 充電中（$level%），清除通知狀態")
+                }
+            } else if (level < criticalThreshold) {
+                if (lastNotifiedCritical.add(deviceId)) {
+                    Log.i(TAG, "觸發緊急低電量：$displayName $level% < $criticalThreshold%")
+                    postCriticalAlert(displayName, level, criticalThreshold, deviceId)
                 }
             } else {
+                lastNotifiedCritical.remove(deviceId)
                 val lastLevel = lastNotifiedLevel[deviceId]
                 if (lastLevel != level) {
-                    Log.i(TAG, "觸發低電量通知：${record.deviceName} $level% < $threshold%（前次=$lastLevel）")
+                    Log.i(TAG, "觸發低電量通知：$displayName $level% < $threshold%（前次=$lastLevel）")
                     lastNotifiedLevel[deviceId] = level
-                    postAlert(record.alias ?: record.deviceName, level, threshold, deviceId)
-                } else {
-                    Log.d(TAG, "電量未變（$level%），略過重複通知：${record.deviceName}")
+                    postAlert(displayName, level, threshold, deviceId)
                 }
             }
         } else {
-            // Battery recovered above threshold — reset so next drop can trigger again
-            if (lastNotifiedLevel.remove(deviceId) != null) {
-                Log.d(TAG, "${record.deviceName} 電量已回復（$level% >= $threshold%），重設通知狀態")
+            if (lastNotifiedLevel.remove(deviceId) != null || lastNotifiedCritical.remove(deviceId)) {
+                Log.d(TAG, "${record.deviceName} 電量已回復（$level% >= $threshold%）")
             }
         }
     }
@@ -154,9 +161,11 @@ class AlertNotificationManager(
     /** 取消指定裝置的警報通知並清除狀態（分享被撤銷時呼叫）。 */
     fun cancelAlert(deviceId: String) {
         nm.cancel(deviceId.hashCode())
+        nm.cancel("critical_${deviceId}".hashCode())
         nm.cancel("full_${deviceId}".hashCode())
         nm.cancel("offline_${deviceId}".hashCode())
         lastNotifiedLevel.remove(deviceId)
+        lastNotifiedCritical.remove(deviceId)
         fullChargeNotified.remove(deviceId)
         lastOnlineState.remove(deviceId)
         Log.d(TAG, "警報已撤銷：$deviceId")
@@ -169,6 +178,21 @@ class AlertNotificationManager(
         val hour = Calendar.getInstance().get(Calendar.HOUR_OF_DAY)
         return if (start <= end) hour in start until end
                else hour >= start || hour < end
+    }
+
+    private fun postCriticalAlert(deviceName: String, level: Int, threshold: Int, deviceId: String) {
+        if (isInQuietHours()) { Log.d(TAG, "靜音時段，略過緊急低電量通知：$deviceName"); return }
+        val notifId = "critical_${deviceId}".hashCode()
+        val notification = NotificationCompat.Builder(context, ALERT_CHANNEL_ID)
+            .setContentTitle(context.getString(R.string.notif_critical_title, deviceName))
+            .setContentText(context.getString(R.string.notif_critical_text, level, threshold))
+            .setSmallIcon(android.R.drawable.ic_dialog_alert)
+            .setPriority(NotificationCompat.PRIORITY_MAX)
+            .setCategory(NotificationCompat.CATEGORY_ALARM)
+            .setAutoCancel(true)
+            .build()
+        nm.notify(notifId, notification)
+        Log.d(TAG, "緊急低電量通知已發送：$deviceName $level% < $threshold%")
     }
 
     private fun postOfflineAlert(deviceName: String, deviceId: String) {

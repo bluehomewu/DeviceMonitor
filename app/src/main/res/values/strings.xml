@@ -102,7 +102,8 @@
     <string name="master_device_badge">★ Master</string>
     <string name="status_online">Online</string>
     <string name="status_offline">Offline</string>
-    <string name="label_alert_threshold">Alert Threshold</string>
+    <string name="label_alert_threshold">Warning Threshold</string>
+    <string name="label_critical_threshold">Critical Threshold</string>
     <string name="label_manufacturer">Manufacturer</string>
     <string name="label_android_version">Android Version</string>
     <string name="label_build_number">Build Number</string>
@@ -137,6 +138,8 @@
     <string name="notif_alert_text">Battery at %1$d%%, below threshold %2$d%%</string>
     <string name="notif_full_charge_title">Fully Charged: %s</string>
     <string name="notif_full_charge_text">Battery is at 100%% — you can unplug now.</string>
+    <string name="notif_critical_title">Critical Battery: %s</string>
+    <string name="notif_critical_text">Battery at %1$d%%, below critical level %2$d%%!</string>
     <string name="notif_offline_title">Device Offline: %s</string>
     <string name="notif_offline_text">This device has stopped reporting — it may be off or out of range.</string>
 </resources>

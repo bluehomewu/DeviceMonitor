@@ -102,7 +102,8 @@
     <string name="master_device_badge">★ 主裝置</string>
     <string name="status_online">上線</string>
     <string name="status_offline">離線</string>
-    <string name="label_alert_threshold">警報閾值</string>
+    <string name="label_alert_threshold">警告閾值</string>
+    <string name="label_critical_threshold">緊急閾值</string>
     <string name="label_manufacturer">製造商</string>
     <string name="label_android_version">Android 版本</string>
     <string name="label_build_number">系統版本號</string>
@@ -137,6 +138,8 @@
     <string name="notif_alert_text">電量剩 %1$d%%，低於警報閾值 %2$d%%</string>
     <string name="notif_full_charge_title">充滿電：%s</string>
     <string name="notif_full_charge_text">電量已達 100%%，可以拔除充電線了。</string>
+    <string name="notif_critical_title">緊急低電量：%s</string>
+    <string name="notif_critical_text">電量剩 %1$d%%，已低於緊急閾值 %2$d%%！</string>
     <string name="notif_offline_title">裝置離線：%s</string>
     <string name="notif_offline_text">此裝置已停止回報，可能已關機或超出網路範圍。</string>
 </resources>

@@ -472,6 +472,8 @@ fun DeviceListScreen(
                             onDrag = { dy -> dragState.onDrag(dy) { f, t -> vm.reorderPinned(f, t) } },
                             onDragEnd = { dragState.stopDrag() },
                             onThresholdChange = { vm.setAlertThreshold(dev.id, it) },
+                            criticalThreshold = vm.getCriticalThreshold(dev.id, dev.alertThreshold),
+                            onCriticalThresholdChange = { vm.setCriticalThreshold(dev.id, it) },
                             onAliasChange = { vm.setAlias(dev.id, it) },
                             onPinToggle = { vm.togglePin(dev.id) }
                         )
@@ -533,6 +535,8 @@ fun DeviceListScreen(
                             isSelected = dev.id in selectedIds,
                             onSelectToggle = { vm.toggleSelect(dev.id) },
                             onThresholdChange = { vm.setAlertThreshold(dev.id, it) },
+                            criticalThreshold = vm.getCriticalThreshold(dev.id, dev.alertThreshold),
+                            onCriticalThresholdChange = { vm.setCriticalThreshold(dev.id, it) },
                             onAliasChange = { vm.setAlias(dev.id, it) },
                             onPinToggle = { vm.togglePin(dev.id) }
                         )
@@ -645,6 +649,8 @@ private fun DeviceCard(
     isSelected: Boolean = false,
     onSelectToggle: () -> Unit = {},
     onThresholdChange: (Int) -> Unit,
+    criticalThreshold: Int = 10,
+    onCriticalThresholdChange: (Int) -> Unit = {},
     onAliasChange: (String) -> Unit,
     onPinToggle: () -> Unit,
     onDragStart: () -> Unit = {},
@@ -653,6 +659,9 @@ private fun DeviceCard(
 ) {
     var sliderValue by remember(device.alertThreshold) {
         mutableFloatStateOf(device.alertThreshold.toFloat())
+    }
+    var criticalSliderValue by remember(criticalThreshold) {
+        mutableFloatStateOf(criticalThreshold.toFloat())
     }
     var expanded by rememberSaveable(device.id) { mutableStateOf(false) }
     var showAliasDialog by remember { mutableStateOf(false) }
@@ -868,6 +877,26 @@ private fun DeviceCard(
                 onValueChangeFinished = { onThresholdChange(sliderValue.toInt()) },
                 valueRange = 10f..100f,
                 steps = 8,
+                modifier = Modifier.fillMaxWidth()
+            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Text(text = stringResource(R.string.label_critical_threshold), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.error.copy(alpha = 0.8f))
+                Text(text = "${criticalSliderValue.toInt()}%", style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.Medium, color = MaterialTheme.colorScheme.error)
+            }
+            Slider(
+                value = criticalSliderValue,
+                onValueChange = { criticalSliderValue = it },
+                onValueChangeFinished = { onCriticalThresholdChange(criticalSliderValue.toInt()) },
+                valueRange = 10f..sliderValue.coerceAtLeast(10f),
+                steps = ((sliderValue.toInt() - 10) / 10).coerceAtLeast(0),
+                colors = androidx.compose.material3.SliderDefaults.colors(
+                    thumbColor = MaterialTheme.colorScheme.error,
+                    activeTrackColor = MaterialTheme.colorScheme.error
+                ),
                 modifier = Modifier.fillMaxWidth()
             )
         }
