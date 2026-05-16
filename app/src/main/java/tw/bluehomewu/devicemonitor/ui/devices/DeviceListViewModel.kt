@@ -160,6 +160,19 @@ class DeviceListViewModel(
         ids.forEach { id -> setAlertThreshold(id, threshold) }
     }
 
+    private val listDisplayPrefs = getApplication<Application>()
+        .getSharedPreferences("list_display_prefs", Context.MODE_PRIVATE)
+
+    private val _showAlertThreshold = MutableStateFlow(
+        listDisplayPrefs.getBoolean("show_alert_threshold", false)
+    )
+    val showAlertThreshold: StateFlow<Boolean> = _showAlertThreshold.asStateFlow()
+
+    fun setShowAlertThreshold(value: Boolean) {
+        _showAlertThreshold.value = value
+        listDisplayPrefs.edit().putBoolean("show_alert_threshold", value).apply()
+    }
+
     private val criticalPrefs = getApplication<Application>()
         .getSharedPreferences("app_prefs", Context.MODE_PRIVATE)
 
