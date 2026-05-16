@@ -20,6 +20,8 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import java.time.OffsetDateTime
+import java.time.ZoneOffset
 import tw.bluehomewu.devicemonitor.data.local.PinnedOrderManager
 import tw.bluehomewu.devicemonitor.data.memory.DeviceStateHolder
 import tw.bluehomewu.devicemonitor.data.remote.DeviceRecord
@@ -89,7 +91,16 @@ class DeviceListViewModel(
             DeviceSortOrder.BATTERY_ASC  -> rest.sortedBy { it.batteryLevel }
             DeviceSortOrder.BATTERY_DESC -> rest.sortedByDescending { it.batteryLevel }
             DeviceSortOrder.OFFLINE_FIRST -> rest.sortedWith(
-                compareBy<DeviceRecord> { it.isOnline }.thenBy { it.deviceName }
+                compareBy<DeviceRecord> { rec ->
+                    val stale = rec.updatedAt?.let {
+                        try {
+                            val updated = OffsetDateTime.parse(it).toInstant().epochSecond
+                            val now = OffsetDateTime.now(ZoneOffset.UTC).toInstant().epochSecond
+                            (now - updated) > 180L
+                        } catch (_: Exception) { false }
+                    } ?: false
+                    rec.isOnline && !stale
+                }.thenBy { it.deviceName }
             )
         }
         listOfNotNull(current) + pinnedDevices + sortedRest
