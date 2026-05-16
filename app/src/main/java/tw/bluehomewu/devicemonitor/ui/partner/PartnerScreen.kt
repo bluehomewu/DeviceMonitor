@@ -62,6 +62,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.ui.graphics.painter.BitmapPainter
 import kotlinx.coroutines.launch
 import tw.bluehomewu.devicemonitor.data.remote.DeviceRecord
@@ -421,33 +424,40 @@ private fun InviteSheet(
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .heightIn(max = 240.dp)
+                        .verticalScroll(rememberScrollState())
                 ) {
-                    Checkbox(
-                        checked = selected.size == ownDevices.size && ownDevices.isNotEmpty(),
-                        onCheckedChange = { all ->
-                            if (all) { selected.clear(); selected.addAll(ownDevices.map { it.id }) }
-                            else selected.clear()
-                        }
-                    )
-                    Text("全選", style = MaterialTheme.typography.bodyMedium)
-                }
-                ownDevices.forEach { device ->
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Checkbox(
-                            checked = device.id in selected,
-                            onCheckedChange = { checked ->
-                                if (checked) selected.add(device.id) else selected.remove(device.id)
+                            checked = selected.size == ownDevices.size && ownDevices.isNotEmpty(),
+                            onCheckedChange = { all ->
+                                if (all) { selected.clear(); selected.addAll(ownDevices.map { it.id }) }
+                                else selected.clear()
                             }
                         )
-                        Column {
-                            Text(device.alias ?: device.deviceName, style = MaterialTheme.typography.bodyMedium)
-                            Text("電量：${device.batteryLevel}%", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text("全選", style = MaterialTheme.typography.bodyMedium)
+                    }
+                    ownDevices.forEach { device ->
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Checkbox(
+                                checked = device.id in selected,
+                                onCheckedChange = { checked ->
+                                    if (checked) selected.add(device.id) else selected.remove(device.id)
+                                }
+                            )
+                            Column {
+                                Text(device.alias ?: device.deviceName, style = MaterialTheme.typography.bodyMedium)
+                                Text("電量：${device.batteryLevel}%", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            }
                         }
                     }
                 }

@@ -26,7 +26,9 @@ class PartnerRepository(private val supabase: SupabaseClient) {
         }
         val code = randomCode()
         val partnership = supabase.from("partnerships")
-            .insert(PartnershipInsertRow(uidA = myUid, inviteCode = code))
+            .insert(PartnershipInsertRow(uidA = myUid, inviteCode = code)) {
+                select()
+            }
             .decodeSingle<Partnership>()
         if (deviceIds.isNotEmpty()) {
             val rows = deviceIds.map {
