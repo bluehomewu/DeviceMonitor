@@ -99,12 +99,12 @@ fun PartnerScreen(
             vm.clearError()
         }
     }
-    // Join success → Snackbar
+    // Join success → close sheet then show snackbar
     LaunchedEffect(joinSuccess) {
         if (joinSuccess) {
-            snackbar.showSnackbar("夥伴配對成功！")
-            vm.clearJoinSuccess()
             showJoinSheet = false
+            vm.clearJoinSuccess()
+            snackbar.showSnackbar("夥伴配對成功！")
         }
     }
 
