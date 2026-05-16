@@ -43,6 +43,8 @@ import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.outlined.PushPin
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CircularProgressIndicator
@@ -152,6 +154,7 @@ private class DragDropState(private val lazyListState: LazyListState) {
 
 // ── Screen ────────────────────────────────────────────────────────────────────
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DeviceListScreen(
     modifier: Modifier = Modifier,
@@ -264,6 +267,11 @@ fun DeviceListScreen(
             }
         }
 
+        PullToRefreshBox(
+            isRefreshing = isRefreshing,
+            onRefresh = { vm.refresh() },
+            modifier = Modifier.fillMaxSize()
+        ) {
         if (devices.isEmpty()) {
             Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 Text(
@@ -428,6 +436,7 @@ fun DeviceListScreen(
                 }
             }
         }
+        } // PullToRefreshBox
     }
 }
 
