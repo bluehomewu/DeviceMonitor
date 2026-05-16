@@ -71,7 +71,11 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.foundation.Canvas
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.material3.LocalContentColor
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
@@ -401,6 +405,7 @@ fun DeviceListScreen(
                             showPinAction = false,
                             showDragHandle = false,
                             onThresholdChange = { vm.setAlertThreshold(dev.id, it) },
+                            batteryHistory = vm.getBatteryHistory(dev.id),
                             onAliasChange = { vm.setAlias(dev.id, it) },
                             onPinToggle = {}
                         )
@@ -474,6 +479,7 @@ fun DeviceListScreen(
                             onThresholdChange = { vm.setAlertThreshold(dev.id, it) },
                             criticalThreshold = vm.getCriticalThreshold(dev.id, dev.alertThreshold),
                             onCriticalThresholdChange = { vm.setCriticalThreshold(dev.id, it) },
+                            batteryHistory = vm.getBatteryHistory(dev.id),
                             onAliasChange = { vm.setAlias(dev.id, it) },
                             onPinToggle = { vm.togglePin(dev.id) }
                         )
@@ -537,6 +543,7 @@ fun DeviceListScreen(
                             onThresholdChange = { vm.setAlertThreshold(dev.id, it) },
                             criticalThreshold = vm.getCriticalThreshold(dev.id, dev.alertThreshold),
                             onCriticalThresholdChange = { vm.setCriticalThreshold(dev.id, it) },
+                            batteryHistory = vm.getBatteryHistory(dev.id),
                             onAliasChange = { vm.setAlias(dev.id, it) },
                             onPinToggle = { vm.togglePin(dev.id) }
                         )
@@ -651,6 +658,7 @@ private fun DeviceCard(
     onThresholdChange: (Int) -> Unit,
     criticalThreshold: Int = 10,
     onCriticalThresholdChange: (Int) -> Unit = {},
+    batteryHistory: List<Int> = emptyList(),
     onAliasChange: (String) -> Unit,
     onPinToggle: () -> Unit,
     onDragStart: () -> Unit = {},
@@ -862,6 +870,21 @@ private fun DeviceCard(
                 }
             }
 
+            if (batteryHistory.size >= 2) {
+                HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
+                Text(
+                    text = "電量歷史（最近 ${batteryHistory.size} 筆）",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = LocalContentColor.current.copy(alpha = 0.6f)
+                )
+                Spacer(Modifier.height(4.dp))
+                BatteryHistoryChart(
+                    history = batteryHistory,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(56.dp)
+                )
+            }
             HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -948,6 +971,39 @@ private fun formatRelativeTime(updatedAt: String): String? {
             DateUtils.SECOND_IN_MILLIS, DateUtils.FORMAT_ABBREV_RELATIVE
         ).toString()
     } catch (_: Exception) { null }
+}
+
+@Composable
+private fun BatteryHistoryChart(history: List<Int>, modifier: Modifier = Modifier) {
+    if (history.size < 2) return
+    val lastLevel = history.last()
+    val lineColor = when {
+        lastLevel >= 50 -> Color(0xFF4CAF50)
+        lastLevel >= 20 -> Color(0xFFFFA726)
+        else -> Color(0xFFF44336)
+    }
+    Canvas(modifier = modifier) {
+        val w = size.width
+        val h = size.height
+        val n = history.size
+        val pts = history.mapIndexed { i, lvl ->
+            Offset(i * w / (n - 1), h - lvl / 100f * h)
+        }
+        val fillPath = Path().apply {
+            moveTo(pts[0].x, h)
+            lineTo(pts[0].x, pts[0].y)
+            pts.drop(1).forEach { lineTo(it.x, it.y) }
+            lineTo(pts.last().x, h)
+            close()
+        }
+        drawPath(fillPath, color = lineColor.copy(alpha = 0.15f))
+        val linePath = Path().apply {
+            moveTo(pts[0].x, pts[0].y)
+            pts.drop(1).forEach { lineTo(it.x, it.y) }
+        }
+        drawPath(linePath, color = lineColor, style = Stroke(width = 2.dp.toPx()))
+        drawCircle(color = lineColor, radius = 3.dp.toPx(), center = pts.last())
+    }
 }
 
 @Composable

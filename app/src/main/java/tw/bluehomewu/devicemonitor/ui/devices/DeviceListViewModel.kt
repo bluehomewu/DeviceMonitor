@@ -161,6 +161,9 @@ class DeviceListViewModel(
         criticalPrefs.edit().putInt("critical_threshold_$deviceId", threshold).apply()
     }
 
+    fun getBatteryHistory(deviceId: String): List<Int> =
+        AppModule.batteryHistoryManager.getHistory(deviceId)
+
     fun setAlias(deviceId: String, alias: String) {
         val trimmed = alias.trim().takeIf { it.isNotEmpty() }
         deviceStateHolder.updateAlias(deviceId, trimmed)

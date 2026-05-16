@@ -11,6 +11,7 @@ import io.github.jan.supabase.createSupabaseClient
 import io.github.jan.supabase.postgrest.Postgrest
 import io.github.jan.supabase.realtime.Realtime
 import tw.bluehomewu.devicemonitor.BuildConfig
+import tw.bluehomewu.devicemonitor.data.local.BatteryHistoryManager
 import tw.bluehomewu.devicemonitor.data.local.GroupUidManager
 import tw.bluehomewu.devicemonitor.data.local.PartnerNamingManager
 import tw.bluehomewu.devicemonitor.data.local.PinnedOrderManager
@@ -82,6 +83,9 @@ object AppModule {
         AlertNotificationManager(_appContext, deviceStateHolder, thisDeviceId)
     }
 
+    val batteryHistoryManager: BatteryHistoryManager by lazy {
+        BatteryHistoryManager(_appContext.getSharedPreferences("battery_history", Context.MODE_PRIVATE))
+    }
     val pinnedOrderManager: PinnedOrderManager by lazy { PinnedOrderManager(_appContext) }
     val groupUidManager: GroupUidManager by lazy { GroupUidManager(_appContext) }
     val partnerNamingManager: PartnerNamingManager by lazy {
@@ -94,7 +98,7 @@ object AppModule {
     }
 
     val realtimeRepository: RealtimeRepository by lazy {
-        RealtimeRepository(supabase, deviceStateHolder, partnerStateHolder, alertNotificationManager, deviceRepository)
+        RealtimeRepository(supabase, deviceStateHolder, partnerStateHolder, alertNotificationManager, deviceRepository, batteryHistoryManager)
     }
 
     fun initialize(context: Context) {

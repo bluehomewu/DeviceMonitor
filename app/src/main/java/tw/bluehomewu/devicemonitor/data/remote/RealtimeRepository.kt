@@ -12,6 +12,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEach
+import tw.bluehomewu.devicemonitor.data.local.BatteryHistoryManager
 import tw.bluehomewu.devicemonitor.data.memory.DeviceStateHolder
 import tw.bluehomewu.devicemonitor.data.memory.PartnerStateHolder
 import tw.bluehomewu.devicemonitor.service.AlertNotificationManager
@@ -21,7 +22,8 @@ class RealtimeRepository(
     private val deviceStateHolder: DeviceStateHolder,
     private val partnerStateHolder: PartnerStateHolder,
     private val alertNotificationManager: AlertNotificationManager,
-    private val deviceRepository: DeviceRepository
+    private val deviceRepository: DeviceRepository,
+    private val batteryHistoryManager: BatteryHistoryManager
 ) {
     private var deviceChannel: RealtimeChannel? = null
     private var sharedChannel: RealtimeChannel? = null
@@ -59,6 +61,7 @@ class RealtimeRepository(
 
                     is PostgresAction.Update -> runCatching {
                         val record = action.decodeRecord<DeviceRecord>()
+                        batteryHistoryManager.addEntry(record.id, record.batteryLevel)
                         if (record.ownerUid == ownerUid) {
                             deviceStateHolder.upsert(record)
                             alertNotificationManager.checkAndNotify(record)
