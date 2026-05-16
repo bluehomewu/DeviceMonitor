@@ -68,6 +68,7 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.ui.graphics.painter.BitmapPainter
 import com.journeyapps.barcodescanner.ScanContract
 import com.journeyapps.barcodescanner.ScanOptions
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import tw.bluehomewu.devicemonitor.data.remote.DeviceRecord
 import tw.bluehomewu.devicemonitor.data.remote.PartnerRepository
@@ -84,6 +85,7 @@ fun PartnerScreen(
     val error by vm.error.collectAsStateWithLifecycle()
     val inviteCode by vm.inviteCode.collectAsStateWithLifecycle()
     val inviteQrBitmap by vm.inviteQrBitmap.collectAsStateWithLifecycle()
+    val inviteCreatedAt by vm.inviteCreatedAt.collectAsStateWithLifecycle()
     val joinSuccess by vm.joinSuccess.collectAsStateWithLifecycle()
 
     val snackbar = remember { SnackbarHostState() }
@@ -217,6 +219,7 @@ fun PartnerScreen(
             inviteCode = inviteCode,
             inviteQrBitmap = inviteQrBitmap,
             isLoading = isLoading,
+            inviteCreatedAt = inviteCreatedAt,
             onGenerate = { selectedIds ->
                 vm.generateInvite(selectedIds)
             },
@@ -488,6 +491,7 @@ private fun InviteSheet(
     inviteCode: String?,
     inviteQrBitmap: android.graphics.Bitmap?,
     isLoading: Boolean,
+    inviteCreatedAt: Long?,
     onGenerate: (List<String>) -> Unit,
     onDismiss: () -> Unit
 ) {
@@ -593,6 +597,25 @@ private fun InviteSheet(
                     "邀請碼使用一次後即失效。",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                var secondsLeft by remember(inviteCreatedAt) {
+                    val elapsed = if (inviteCreatedAt != null) System.currentTimeMillis() - inviteCreatedAt else 0L
+                    mutableStateOf(((30 * 60 * 1000L - elapsed) / 1000L).coerceAtLeast(0L))
+                }
+                LaunchedEffect(inviteCreatedAt) {
+                    while (secondsLeft > 0L) {
+                        delay(1000L)
+                        val elapsed = if (inviteCreatedAt != null) System.currentTimeMillis() - inviteCreatedAt else 30 * 60 * 1000L
+                        secondsLeft = ((30 * 60 * 1000L - elapsed) / 1000L).coerceAtLeast(0L)
+                    }
+                }
+                val countdownColor = if (secondsLeft <= 60L) MaterialTheme.colorScheme.error
+                                     else MaterialTheme.colorScheme.onSurfaceVariant
+                Text(
+                    text = if (secondsLeft > 0L) "有效期限：%02d:%02d".format(secondsLeft / 60, secondsLeft % 60)
+                           else "邀請碼已過期",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = countdownColor
                 )
                 Button(onClick = onDismiss, modifier = Modifier.fillMaxWidth()) { Text("完成") }
             }

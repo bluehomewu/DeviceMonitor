@@ -5,12 +5,28 @@ import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.postgrest.from
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import java.text.SimpleDateFormat
+import java.util.Locale
+import java.util.TimeZone
 
 class PartnerRepository(private val supabase: SupabaseClient) {
 
     companion object {
         private const val TAG = "PartnerRepository"
         const val MAX_PARTNERS = 5
+        private const val INVITE_EXPIRY_MS = 30 * 60 * 1000L
+
+        private val isoFormat = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", Locale.US).apply {
+            timeZone = TimeZone.getTimeZone("UTC")
+        }
+
+        fun isInviteExpired(createdAt: String?): Boolean {
+            if (createdAt == null) return false
+            return runCatching {
+                val created = isoFormat.parse(createdAt.substringBefore("+").substringBefore("Z"))?.time ?: return false
+                System.currentTimeMillis() - created > INVITE_EXPIRY_MS
+            }.getOrDefault(false)
+        }
     }
 
     /**
@@ -52,6 +68,10 @@ class PartnerRepository(private val supabase: SupabaseClient) {
             it.inviteCode.trim() == code.trim() && it.status == "pending" && it.uidB == null
         } ?: return null
         if (target.uidA == myUid) return null
+        if (isInviteExpired(target.createdAt)) {
+            Log.w(TAG, "邀請碼已過期：${target.inviteCode}")
+            return null
+        }
         supabase.from("partnerships").update({
             set("uid_b", myUid)
             set("status", "active")

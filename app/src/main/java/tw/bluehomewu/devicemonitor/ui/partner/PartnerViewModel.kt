@@ -59,6 +59,9 @@ class PartnerViewModel(
     private val _inviteQrBitmap = MutableStateFlow<Bitmap?>(null)
     val inviteQrBitmap: StateFlow<Bitmap?> = _inviteQrBitmap.asStateFlow()
 
+    private val _inviteCreatedAt = MutableStateFlow<Long?>(null)
+    val inviteCreatedAt: StateFlow<Long?> = _inviteCreatedAt.asStateFlow()
+
     private val _joinSuccess = MutableStateFlow<Boolean>(false)
     val joinSuccess: StateFlow<Boolean> = _joinSuccess.asStateFlow()
 
@@ -123,6 +126,7 @@ class PartnerViewModel(
             runCatching {
                 val code = partnerRepository.generateInvite(myUid, selectedDeviceIds)
                 _inviteCode.value = code
+                _inviteCreatedAt.value = System.currentTimeMillis()
                 _inviteQrBitmap.value = withContext(Dispatchers.Default) { buildQrBitmap(code) }
             }.onFailure {
                 _error.value = "無法產生邀請碼：${it.message}"
@@ -211,7 +215,7 @@ class PartnerViewModel(
     }
 
     fun clearError() { _error.value = null }
-    fun clearInvite() { _inviteCode.value = null; _inviteQrBitmap.value = null }
+    fun clearInvite() { _inviteCode.value = null; _inviteQrBitmap.value = null; _inviteCreatedAt.value = null }
     fun clearJoinSuccess() { _joinSuccess.value = false }
 
     private fun buildQrBitmap(text: String, size: Int = 512): Bitmap {
