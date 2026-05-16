@@ -34,6 +34,7 @@ import kotlinx.coroutines.withTimeoutOrNull
 import tw.bluehomewu.devicemonitor.R
 import tw.bluehomewu.devicemonitor.data.collector.BatteryCollector
 import com.google.firebase.messaging.FirebaseMessaging
+import androidx.glance.appwidget.updateAll
 import tw.bluehomewu.devicemonitor.widget.DeviceWidget
 import tw.bluehomewu.devicemonitor.data.collector.NetworkCollector
 import tw.bluehomewu.devicemonitor.data.model.DeviceInfo
@@ -325,14 +326,14 @@ class DeviceMonitorService : Service() {
             runCatching {
                 val cachedToken = AppModule.fcmTokenManager.getToken()
                 if (cachedToken != null) {
-                    deviceRepository.updateFcmToken(ownerUid, AppModule.thisDeviceId, cachedToken)
+                    deviceRepository.updateFcmToken(effectiveUid, AppModule.thisDeviceId, cachedToken)
                     Log.d(TAG, "已同步快取 FCM token")
                 } else {
                     FirebaseMessaging.getInstance().token.addOnSuccessListener { token ->
                         AppModule.fcmTokenManager.saveToken(token)
                         scope.launch {
                             runCatching {
-                                deviceRepository.updateFcmToken(ownerUid, AppModule.thisDeviceId, token)
+                                deviceRepository.updateFcmToken(effectiveUid, AppModule.thisDeviceId, token)
                                 Log.d(TAG, "FCM token 已首次同步")
                             }
                         }

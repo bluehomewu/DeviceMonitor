@@ -2,6 +2,7 @@ package tw.bluehomewu.devicemonitor.widget
 
 import android.content.Context
 import android.provider.Settings
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.glance.GlanceId
@@ -10,7 +11,7 @@ import androidx.glance.action.actionStartActivity
 import androidx.glance.appwidget.GlanceAppWidget
 import androidx.glance.appwidget.provideContent
 import androidx.glance.background
-import androidx.glance.clickable
+import androidx.glance.action.clickable
 import androidx.glance.layout.Alignment
 import androidx.glance.layout.Column
 import androidx.glance.layout.Spacer
@@ -45,12 +46,7 @@ class DeviceWidget : GlanceAppWidget() {
             Column(
                 modifier = GlanceModifier
                     .fillMaxSize()
-                    .background(
-                        ColorProvider(
-                            day = androidx.compose.ui.graphics.Color(0xFFF5F5F5),
-                            night = androidx.compose.ui.graphics.Color(0xFF1E1E1E)
-                        )
-                    )
+                    .background(ColorProvider(Color(0xFFF5F5F5)))
                     .clickable(actionStartActivity<MainActivity>())
                     .padding(16.dp),
                 verticalAlignment = Alignment.CenterVertically,
