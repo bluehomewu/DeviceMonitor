@@ -466,7 +466,7 @@ fun DeviceListScreen(
                                 swipedOpenId = null
                             }) {
                                 Icon(
-                                    imageVector = Icons.Default.Share,
+                                    imageVector = Icons.Default.GroupAdd,
                                     contentDescription = "分享裝置",
                                     tint = MaterialTheme.colorScheme.secondary
                                 )
@@ -539,7 +539,7 @@ fun DeviceListScreen(
                                 swipedOpenId = null
                             }) {
                                 Icon(
-                                    imageVector = Icons.Default.Share,
+                                    imageVector = Icons.Default.GroupAdd,
                                     contentDescription = "分享裝置",
                                     tint = MaterialTheme.colorScheme.secondary
                                 )
