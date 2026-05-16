@@ -1,6 +1,6 @@
 # 裝置監控精靈（Device Monitor）
 
-> **繁體中文** | [English](README.md)
+> **繁體中文** | [English](README.md) | [架構與開發說明](ARCHITECTURE.md)
 
 即時監控多台 Android 手機的電量與網路狀態，電量低於閾值時自動通知主裝置。  
 無需自架伺服器，使用 Google 帳號登入即可直接使用。

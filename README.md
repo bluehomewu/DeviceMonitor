@@ -1,6 +1,6 @@
 # Device Monitor
 
-> [繁體中文](README_zhTW.md) | **English**
+> [繁體中文](README_zhTW.md) | **English** | [Architecture & Dev Guide](ARCHITECTURE.md)
 
 Monitor battery level and network status across multiple Android devices in real time. Automatically notifies the designated master device when battery drops below a configurable threshold.  
 No self-hosted server required — just sign in with a Google account and start monitoring.
