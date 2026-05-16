@@ -656,7 +656,7 @@ private fun JoinSheet(
                             ScanOptions().apply {
                                 setPrompt("掃描邀請碼 QR Code")
                                 setBeepEnabled(false)
-                                setOrientationLocked(false)
+                                setOrientationLocked(true)
                             }
                         )
                     }

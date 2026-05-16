@@ -24,8 +24,8 @@ android {
         applicationId = "tw.bluehomewu.devicemonitor"
         minSdk = 29
         targetSdk = 36
-        versionCode = 43
-        versionName = "1.18.3"
+        versionCode = 44
+        versionName = "1.18.4"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
