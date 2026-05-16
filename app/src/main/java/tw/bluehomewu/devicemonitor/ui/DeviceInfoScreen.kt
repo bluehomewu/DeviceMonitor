@@ -1,5 +1,6 @@
 package tw.bluehomewu.devicemonitor.ui
 
+import android.app.TimePickerDialog
 import android.app.admin.DevicePolicyManager
 import android.content.ComponentName
 import android.content.Context
@@ -85,6 +86,9 @@ fun DeviceInfoScreen(
     val releaseDialog by vm.releaseDialog.collectAsStateWithLifecycle()
     val isBetaEnabled by vm.isBetaEnabled.collectAsStateWithLifecycle()
     val isDeleteDeviceEnabled by vm.isDeleteDeviceEnabled.collectAsStateWithLifecycle()
+    val quietHoursEnabled by vm.quietHoursEnabled.collectAsStateWithLifecycle()
+    val quietHoursStart by vm.quietHoursStart.collectAsStateWithLifecycle()
+    val quietHoursEnd by vm.quietHoursEnd.collectAsStateWithLifecycle()
     val context = LocalContext.current
     val uriHandler = LocalUriHandler.current
 
@@ -389,6 +393,64 @@ fun DeviceInfoScreen(
                         checked = isDeleteDeviceEnabled,
                         onCheckedChange = { vm.setDeleteDeviceEnabled(it) }
                     )
+                }
+            }
+        }
+
+        // ── 通知靜音時段 ──────────────────────────────────────────
+        Card(modifier = Modifier.fillMaxWidth()) {
+            Column(modifier = Modifier.padding(16.dp)) {
+                Text(stringResource(R.string.section_quiet_hours), style = MaterialTheme.typography.titleMedium)
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = stringResource(R.string.quiet_hours_description),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = if (quietHoursEnabled) stringResource(R.string.quiet_hours_enabled)
+                               else stringResource(R.string.quiet_hours_disabled),
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                    Switch(
+                        checked = quietHoursEnabled,
+                        onCheckedChange = { vm.setQuietHoursEnabled(it) }
+                    )
+                }
+                if (quietHoursEnabled) {
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(stringResource(R.string.quiet_hours_start_label), style = MaterialTheme.typography.bodyMedium)
+                        TextButton(onClick = {
+                            TimePickerDialog(context, { _, h, _ -> vm.setQuietHoursStart(h) },
+                                quietHoursStart, 0, true).show()
+                        }) {
+                            Text(String.format("%02d:00", quietHoursStart))
+                        }
+                    }
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(stringResource(R.string.quiet_hours_end_label), style = MaterialTheme.typography.bodyMedium)
+                        TextButton(onClick = {
+                            TimePickerDialog(context, { _, h, _ -> vm.setQuietHoursEnd(h) },
+                                quietHoursEnd, 0, true).show()
+                        }) {
+                            Text(String.format("%02d:00", quietHoursEnd))
+                        }
+                    }
                 }
             }
         }

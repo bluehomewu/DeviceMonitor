@@ -5,6 +5,7 @@ import android.app.NotificationManager
 import android.content.Context
 import android.util.Log
 import androidx.core.app.NotificationCompat
+import java.util.Calendar
 import tw.bluehomewu.devicemonitor.R
 import tw.bluehomewu.devicemonitor.data.memory.DeviceStateHolder
 import tw.bluehomewu.devicemonitor.data.remote.DeviceRecord
@@ -21,6 +22,7 @@ class AlertNotificationManager(
     }
 
     private val nm = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+    private val prefs = context.getSharedPreferences("app_prefs", Context.MODE_PRIVATE)
 
     private val lastNotifiedLevel = mutableMapOf<String, Int>()
     private val fullChargeNotified = mutableSetOf<String>()
@@ -160,7 +162,17 @@ class AlertNotificationManager(
         Log.d(TAG, "警報已撤銷：$deviceId")
     }
 
+    private fun isInQuietHours(): Boolean {
+        if (!prefs.getBoolean("quiet_hours_enabled", false)) return false
+        val start = prefs.getInt("quiet_hours_start", 22)
+        val end = prefs.getInt("quiet_hours_end", 7)
+        val hour = Calendar.getInstance().get(Calendar.HOUR_OF_DAY)
+        return if (start <= end) hour in start until end
+               else hour >= start || hour < end
+    }
+
     private fun postOfflineAlert(deviceName: String, deviceId: String) {
+        if (isInQuietHours()) { Log.d(TAG, "靜音時段，略過離線通知：$deviceName"); return }
         val notifId = "offline_${deviceId}".hashCode()
         val notification = NotificationCompat.Builder(context, ALERT_CHANNEL_ID)
             .setContentTitle(context.getString(R.string.notif_offline_title, deviceName))
@@ -174,6 +186,7 @@ class AlertNotificationManager(
     }
 
     private fun postFullChargeAlert(deviceName: String, deviceId: String) {
+        if (isInQuietHours()) { Log.d(TAG, "靜音時段，略過充滿電通知：$deviceName"); return }
         val notifId = "full_${deviceId}".hashCode()
         val notification = NotificationCompat.Builder(context, ALERT_CHANNEL_ID)
             .setContentTitle(context.getString(R.string.notif_full_charge_title, deviceName))
@@ -187,6 +200,7 @@ class AlertNotificationManager(
     }
 
     private fun postAlert(deviceName: String, level: Int, threshold: Int, deviceId: String) {
+        if (isInQuietHours()) { Log.d(TAG, "靜音時段，略過低電量通知：$deviceName"); return }
         val notifId = deviceId.hashCode()
         val notification = NotificationCompat.Builder(context, ALERT_CHANNEL_ID)
             .setContentTitle(context.getString(R.string.notif_alert_title, deviceName))

@@ -70,6 +70,14 @@
     <string name="beta_update_enabled">已啟用 Beta 頻道</string>
     <string name="beta_update_disabled">僅追蹤正式版本</string>
 
+    <!-- Quiet hours section -->
+    <string name="section_quiet_hours">通知靜音時段</string>
+    <string name="quiet_hours_description">在設定的時間範圍內，所有警報通知都會靜音。適合設定為夜間充電時段。</string>
+    <string name="quiet_hours_enabled">靜音時段已開啟</string>
+    <string name="quiet_hours_disabled">靜音時段已關閉</string>
+    <string name="quiet_hours_start_label">開始時間</string>
+    <string name="quiet_hours_end_label">結束時間</string>
+
     <!-- About section -->
     <string name="section_about">關於</string>
     <string name="label_version">版本</string>

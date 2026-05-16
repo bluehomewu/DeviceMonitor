@@ -70,6 +70,14 @@
     <string name="beta_update_enabled">Beta channel enabled</string>
     <string name="beta_update_disabled">Stable channel only</string>
 
+    <!-- Quiet hours section -->
+    <string name="section_quiet_hours">Quiet Hours</string>
+    <string name="quiet_hours_description">Suppress all alerts during the set time window. Useful for overnight charging.</string>
+    <string name="quiet_hours_enabled">Quiet hours enabled</string>
+    <string name="quiet_hours_disabled">Quiet hours disabled</string>
+    <string name="quiet_hours_start_label">Start time</string>
+    <string name="quiet_hours_end_label">End time</string>
+
     <!-- About section -->
     <string name="section_about">About</string>
     <string name="label_version">Version</string>

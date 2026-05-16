@@ -198,6 +198,30 @@ class DeviceInfoViewModel(application: Application) : AndroidViewModel(applicati
         prefs.edit().putBoolean("beta_enabled", enabled).apply()
     }
 
+    private val _quietHoursEnabled = MutableStateFlow(prefs.getBoolean("quiet_hours_enabled", false))
+    val quietHoursEnabled: StateFlow<Boolean> = _quietHoursEnabled.asStateFlow()
+
+    private val _quietHoursStart = MutableStateFlow(prefs.getInt("quiet_hours_start", 22))
+    val quietHoursStart: StateFlow<Int> = _quietHoursStart.asStateFlow()
+
+    private val _quietHoursEnd = MutableStateFlow(prefs.getInt("quiet_hours_end", 7))
+    val quietHoursEnd: StateFlow<Int> = _quietHoursEnd.asStateFlow()
+
+    fun setQuietHoursEnabled(enabled: Boolean) {
+        _quietHoursEnabled.value = enabled
+        prefs.edit().putBoolean("quiet_hours_enabled", enabled).apply()
+    }
+
+    fun setQuietHoursStart(hour: Int) {
+        _quietHoursStart.value = hour
+        prefs.edit().putInt("quiet_hours_start", hour).apply()
+    }
+
+    fun setQuietHoursEnd(hour: Int) {
+        _quietHoursEnd.value = hour
+        prefs.edit().putInt("quiet_hours_end", hour).apply()
+    }
+
     private val pm = application.getSystemService(Application.POWER_SERVICE) as PowerManager
 
     private val batteryCollector = BatteryCollector(application)
