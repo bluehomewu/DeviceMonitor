@@ -221,7 +221,7 @@ fun PartnerScreen(
 
     // ── Manage sharing sheet ───────────────────────────────────────────────────
     manageTarget?.let { entry ->
-        val alreadySharedIds = entry.sharedByMe.map { it.deviceId }.toSet()
+        val alreadySharedIds = entry.sharedByMe.map { it.shared.deviceId }.toSet()
         val availableDevices = ownDevices.filter { it.id !in alreadySharedIds }
         ManageShareSheet(
             partnerLabel = entry.partnerUidLabel,
