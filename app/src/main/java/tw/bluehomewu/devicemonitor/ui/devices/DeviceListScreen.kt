@@ -180,6 +180,7 @@ fun DeviceListScreen(
     val selectedIds by vm.selectedIds.collectAsStateWithLifecycle()
     val sortOrder by vm.sortOrder.collectAsStateWithLifecycle()
     val showAlertThreshold by vm.showAlertThreshold.collectAsStateWithLifecycle()
+    val showBatteryHistory by vm.showBatteryHistory.collectAsStateWithLifecycle()
 
     val listState = rememberLazyListState()
     val dragState = remember(listState) { DragDropState(listState) }
@@ -365,6 +366,13 @@ fun DeviceListScreen(
                                 Icon(Icons.Default.Check, contentDescription = null, modifier = Modifier.size(16.dp))
                             }) else null
                         )
+                        DropdownMenuItem(
+                            text = { Text("顯示電量歷史圖") },
+                            onClick = { vm.setShowBatteryHistory(!showBatteryHistory) },
+                            trailingIcon = if (showBatteryHistory) ({
+                                Icon(Icons.Default.Check, contentDescription = null, modifier = Modifier.size(16.dp))
+                            }) else null
+                        )
                     }
                 }
                 IconButton(onClick = { vm.refresh() }, enabled = !isRefreshing) {
@@ -431,6 +439,7 @@ fun DeviceListScreen(
                             showDragHandle = false,
                             onThresholdChange = { vm.setAlertThreshold(dev.id, it) },
                             batteryHistory = vm.getBatteryHistory(dev.id),
+                            showBatteryHistory = showBatteryHistory,
                             showAlertThreshold = showAlertThreshold,
                             onAliasChange = { vm.setAlias(dev.id, it) },
                             onPinToggle = {}
@@ -506,6 +515,7 @@ fun DeviceListScreen(
                             criticalThreshold = vm.getCriticalThreshold(dev.id, dev.alertThreshold),
                             onCriticalThresholdChange = { vm.setCriticalThreshold(dev.id, it) },
                             batteryHistory = vm.getBatteryHistory(dev.id),
+                            showBatteryHistory = showBatteryHistory,
                             showAlertThreshold = showAlertThreshold,
                             onAliasChange = { vm.setAlias(dev.id, it) },
                             onPinToggle = { vm.togglePin(dev.id) }
@@ -571,6 +581,7 @@ fun DeviceListScreen(
                             criticalThreshold = vm.getCriticalThreshold(dev.id, dev.alertThreshold),
                             onCriticalThresholdChange = { vm.setCriticalThreshold(dev.id, it) },
                             batteryHistory = vm.getBatteryHistory(dev.id),
+                            showBatteryHistory = showBatteryHistory,
                             showAlertThreshold = showAlertThreshold,
                             onAliasChange = { vm.setAlias(dev.id, it) },
                             onPinToggle = { vm.togglePin(dev.id) }
@@ -687,6 +698,7 @@ private fun DeviceCard(
     criticalThreshold: Int = 10,
     onCriticalThresholdChange: (Int) -> Unit = {},
     batteryHistory: List<Int> = emptyList(),
+    showBatteryHistory: Boolean = false,
     showAlertThreshold: Boolean = false,
     onAliasChange: (String) -> Unit,
     onPinToggle: () -> Unit,
@@ -899,7 +911,7 @@ private fun DeviceCard(
                 }
             }
 
-            if (batteryHistory.size >= 2) {
+            if (showBatteryHistory && batteryHistory.size >= 2) {
                 HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
                 Text(
                     text = "電量歷史（最近 ${batteryHistory.size} 筆）",

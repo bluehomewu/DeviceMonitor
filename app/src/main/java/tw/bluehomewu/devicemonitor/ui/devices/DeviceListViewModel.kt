@@ -173,6 +173,16 @@ class DeviceListViewModel(
         listDisplayPrefs.edit().putBoolean("show_alert_threshold", value).apply()
     }
 
+    private val _showBatteryHistory = MutableStateFlow(
+        listDisplayPrefs.getBoolean("show_battery_history", false)
+    )
+    val showBatteryHistory: StateFlow<Boolean> = _showBatteryHistory.asStateFlow()
+
+    fun setShowBatteryHistory(value: Boolean) {
+        _showBatteryHistory.value = value
+        listDisplayPrefs.edit().putBoolean("show_battery_history", value).apply()
+    }
+
     private val criticalPrefs = getApplication<Application>()
         .getSharedPreferences("app_prefs", Context.MODE_PRIVATE)
 
