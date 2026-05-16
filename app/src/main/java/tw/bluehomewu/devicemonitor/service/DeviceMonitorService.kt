@@ -33,6 +33,7 @@ import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withTimeoutOrNull
 import tw.bluehomewu.devicemonitor.R
 import tw.bluehomewu.devicemonitor.data.collector.BatteryCollector
+import tw.bluehomewu.devicemonitor.widget.DeviceWidget
 import tw.bluehomewu.devicemonitor.data.collector.NetworkCollector
 import tw.bluehomewu.devicemonitor.data.model.DeviceInfo
 import tw.bluehomewu.devicemonitor.di.AppModule
@@ -446,6 +447,7 @@ class DeviceMonitorService : Service() {
                 Log.d(TAG, "[$reason] upsert 成功：電量=${info.batteryLevel}% 網路=${info.networkType}")
                 pendingRetry = null
                 retryAttempt = 0
+                runCatching { DeviceWidget().updateAll(this@DeviceMonitorService) }
             }.onFailure { e ->
                 Log.e(TAG, "[$reason] upsert 失敗：${e::class.simpleName} — ${e.message}")
                 pendingRetry = info

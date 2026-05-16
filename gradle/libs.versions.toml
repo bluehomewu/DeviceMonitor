@@ -20,6 +20,8 @@ googleid = "1.1.1"
 # WorkManager
 workManager = "2.9.1"
 
+glance = "1.1.1"
+
 zxing = "3.5.3"
 zxingAndroidEmbedded = "4.3.0"
 
@@ -63,6 +65,9 @@ androidx-work-runtime-ktx = { group = "androidx.work", name = "work-runtime-ktx"
 credentials = { group = "androidx.credentials", name = "credentials", version.ref = "credentials" }
 credentials-play-services = { group = "androidx.credentials", name = "credentials-play-services-auth", version.ref = "credentials" }
 googleid = { group = "com.google.android.libraries.identity.googleid", name = "googleid", version.ref = "googleid" }
+
+# Jetpack Glance (App Widget)
+androidx-glance-appwidget = { group = "androidx.glance", name = "glance-appwidget", version.ref = "glance" }
 
 # ZXing (QR Code 產生 + 掃描)
 zxing-core = { group = "com.google.zxing", name = "core", version.ref = "zxing" }

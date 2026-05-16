@@ -24,8 +24,8 @@ android {
         applicationId = "tw.bluehomewu.devicemonitor"
         minSdk = 29
         targetSdk = 36
-        versionCode = 58
-        versionName = "1.32.0"
+        versionCode = 59
+        versionName = "1.33.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
@@ -101,6 +101,10 @@ dependencies {
     implementation(libs.credentials)
     implementation(libs.credentials.play.services)
     implementation(libs.googleid)
+
+    // Jetpack Glance（首頁 Widget）
+    @Suppress("UseTomlInstead")
+    implementation("androidx.glance:glance-appwidget:1.1.1")
 
     // QR Code 產生 + 掃描（夥伴模式邀請碼）
     implementation(libs.zxing.core)

@@ -84,6 +84,18 @@
                 android:resource="@xml/file_paths" />
         </provider>
 
+        <!-- Glance App Widget -->
+        <receiver
+            android:name=".widget.DeviceWidgetReceiver"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/device_widget_info" />
+        </receiver>
+
         <!-- Device Admin Receiver：防止 App 被移除 -->
         <receiver
             android:name=".receiver.DeviceAdminReceiver"
