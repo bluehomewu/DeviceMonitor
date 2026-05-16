@@ -125,7 +125,7 @@ fun ShareDeviceSheet(
                                 )
                                 Spacer(Modifier.width(8.dp))
                                 Text(
-                                    text = "夥伴 ${entry.partnerUidLabel}",
+                                    text = entry.customName ?: "夥伴 ${entry.partnerUidLabel}",
                                     style = MaterialTheme.typography.bodyMedium
                                 )
                             }

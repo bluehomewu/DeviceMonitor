@@ -94,6 +94,8 @@ fun PartnerScreen(
     var showJoinSheet by remember { mutableStateOf(false) }
     var dissolveTarget by remember { mutableStateOf<String?>(null) }
     var manageTarget by remember { mutableStateOf<PartnerEntry?>(null) }
+    var renamingEntry by remember { mutableStateOf<PartnerEntry?>(null) }
+    var renameInput by remember { mutableStateOf("") }
 
     // Error → Snackbar
     LaunchedEffect(error) {
@@ -179,6 +181,10 @@ fun PartnerScreen(
                             onSetReceiveAlerts = { sdId, v -> vm.setReceiveAlerts(sdId, v) },
                             onRemoveShared = { sdId -> vm.removeSharedDevice(sdId) },
                             onManageSharing = { manageTarget = entry },
+                            onRename = {
+                                renameInput = entry.customName ?: ""
+                                renamingEntry = entry
+                            },
                             onDissolve = { dissolveTarget = entry.partnership.id }
                         )
                     }
@@ -241,6 +247,32 @@ fun PartnerScreen(
         )
     }
 
+    // ── Rename partner dialog ──────────────────────────────────────────────────
+    renamingEntry?.let { entry ->
+        AlertDialog(
+            onDismissRequest = { renamingEntry = null },
+            title = { Text("設定夥伴名稱") },
+            text = {
+                OutlinedTextField(
+                    value = renameInput,
+                    onValueChange = { renameInput = it },
+                    label = { Text("顯示名稱（留空還原預設）") },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth()
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    vm.renamePartner(entry.partnership.id, renameInput.takeIf { it.isNotBlank() })
+                    renamingEntry = null
+                }) { Text("確認") }
+            },
+            dismissButton = {
+                TextButton(onClick = { renamingEntry = null }) { Text("取消") }
+            }
+        )
+    }
+
     // ── Dissolve confirmation dialog ───────────────────────────────────────────
     dissolveTarget?.let { pid ->
         AlertDialog(
@@ -266,6 +298,7 @@ private fun PartnerCard(
     onSetReceiveAlerts: (sharedDeviceId: String, receive: Boolean) -> Unit,
     onRemoveShared: (sharedDeviceId: String) -> Unit,
     onManageSharing: () -> Unit,
+    onRename: () -> Unit,
     onDissolve: () -> Unit
 ) {
     Card(
@@ -285,11 +318,22 @@ private fun PartnerCard(
                     modifier = Modifier.size(20.dp)
                 )
                 Spacer(Modifier.width(8.dp))
-                Text(
-                    "夥伴 ${entry.partnerUidLabel}",
-                    style = MaterialTheme.typography.titleMedium,
-                    modifier = Modifier.weight(1f)
-                )
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        entry.customName ?: "夥伴 ${entry.partnerUidLabel}",
+                        style = MaterialTheme.typography.titleMedium
+                    )
+                    if (entry.customName != null) {
+                        Text(
+                            entry.partnerUidLabel,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+                IconButton(onClick = onRename, modifier = Modifier.size(36.dp)) {
+                    Icon(Icons.Default.Edit, contentDescription = "重新命名", modifier = Modifier.size(18.dp))
+                }
                 TextButton(onClick = onManageSharing) {
                     Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(16.dp))
                     Spacer(Modifier.width(2.dp))

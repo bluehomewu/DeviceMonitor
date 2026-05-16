@@ -34,6 +34,7 @@ data class SharedDeviceWithRecord(
 data class PartnerEntry(
     val partnership: Partnership,
     val partnerUidLabel: String,
+    val customName: String?,
     val sharedWithMe: List<SharedDeviceWithRecord>,
     val sharedByMe: List<SharedDeviceWithRecord>
 )
@@ -43,6 +44,8 @@ class PartnerViewModel(
     private val partnerStateHolder: PartnerStateHolder,
     val myUid: String
 ) : ViewModel() {
+
+    private val _localVersion = MutableStateFlow(0)
 
     private val _isLoading = MutableStateFlow(false)
     val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
@@ -63,14 +66,16 @@ class PartnerViewModel(
     val ownDevices: StateFlow<List<DeviceRecord>> = AppModule.deviceStateHolder.devices
         .stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
 
-    /** 組合 partnerships / sharedDevices / sharedRecords 為 UI 可用的清單。 */
+    /** 組合 partnerships / sharedDevices / sharedRecords 為 UI 可用的清單。
+     *  _localVersion 用來在本地名稱變更時觸發重新計算。 */
     val partners: StateFlow<List<PartnerEntry>> = combine(
         partnerStateHolder.partnerships,
         partnerStateHolder.sharedDevices,
-        partnerStateHolder.sharedRecords
-    ) { partnerships, sharedDevices, sharedRecords ->
-        // 同步讀取自己的裝置清單（不加入 combine，裝置名稱變化極少）
+        partnerStateHolder.sharedRecords,
+        _localVersion
+    ) { partnerships, sharedDevices, sharedRecords, _ ->
         val ownDevicesSnapshot = AppModule.deviceStateHolder.devices.value
+        val naming = AppModule.partnerNamingManager
         partnerships.map { p ->
             val pDevices = sharedDevices.filter { it.partnershipId == p.id }
             val withMe = pDevices
@@ -83,6 +88,7 @@ class PartnerViewModel(
             PartnerEntry(
                 partnership = p,
                 partnerUidLabel = partnerUid?.take(8) ?: "未知",
+                customName = naming.getPartnerName(p.id),
                 sharedWithMe = withMe,
                 sharedByMe = byMe
             )
@@ -188,6 +194,11 @@ class PartnerViewModel(
             }.onFailure { _error.value = "解除失敗：${it.message}" }
             _isLoading.value = false
         }
+    }
+
+    fun renamePartner(partnershipId: String, name: String?) {
+        AppModule.partnerNamingManager.setPartnerName(partnershipId, name)
+        _localVersion.value++
     }
 
     fun clearError() { _error.value = null }

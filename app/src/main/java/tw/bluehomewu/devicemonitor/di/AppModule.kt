@@ -12,6 +12,7 @@ import io.github.jan.supabase.postgrest.Postgrest
 import io.github.jan.supabase.realtime.Realtime
 import tw.bluehomewu.devicemonitor.BuildConfig
 import tw.bluehomewu.devicemonitor.data.local.GroupUidManager
+import tw.bluehomewu.devicemonitor.data.local.PartnerNamingManager
 import tw.bluehomewu.devicemonitor.data.local.PinnedOrderManager
 import tw.bluehomewu.devicemonitor.data.memory.DeviceStateHolder
 import tw.bluehomewu.devicemonitor.data.memory.PartnerStateHolder
@@ -83,6 +84,9 @@ object AppModule {
 
     val pinnedOrderManager: PinnedOrderManager by lazy { PinnedOrderManager(_appContext) }
     val groupUidManager: GroupUidManager by lazy { GroupUidManager(_appContext) }
+    val partnerNamingManager: PartnerNamingManager by lazy {
+        PartnerNamingManager(_appContext.getSharedPreferences("partner_prefs", Context.MODE_PRIVATE))
+    }
     val pairingRepository: PairingRepository by lazy { PairingRepository(supabase) }
     val partnerRepository: PartnerRepository by lazy { PartnerRepository(supabase) }
     val partnerStateHolder: PartnerStateHolder by lazy { PartnerStateHolder() }
