@@ -511,26 +511,27 @@ private fun InviteSheet(
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
-                Column(
+                LazyColumn(
                     modifier = Modifier
                         .fillMaxWidth()
                         .heightIn(max = 240.dp)
-                        .verticalScroll(rememberScrollState())
                 ) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Checkbox(
-                            checked = selected.size == ownDevices.size && ownDevices.isNotEmpty(),
-                            onCheckedChange = { all ->
-                                if (all) { selected.clear(); selected.addAll(ownDevices.map { it.id }) }
-                                else selected.clear()
-                            }
-                        )
-                        Text("全選", style = MaterialTheme.typography.bodyMedium)
+                    item {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Checkbox(
+                                checked = selected.size == ownDevices.size && ownDevices.isNotEmpty(),
+                                onCheckedChange = { all ->
+                                    if (all) { selected.clear(); selected.addAll(ownDevices.map { it.id }) }
+                                    else selected.clear()
+                                }
+                            )
+                            Text("全選", style = MaterialTheme.typography.bodyMedium)
+                        }
                     }
-                    ownDevices.forEach { device ->
+                    items(ownDevices, key = { it.id }) { device ->
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             verticalAlignment = Alignment.CenterVertically
