@@ -119,4 +119,6 @@
     <string name="notif_monitor_text">Battery %1$d%%%2$s | %3$s</string>
     <string name="notif_alert_title">Low Battery: %s</string>
     <string name="notif_alert_text">Battery at %1$d%%, below threshold %2$d%%</string>
+    <string name="notif_full_charge_title">Fully Charged: %s</string>
+    <string name="notif_full_charge_text">Battery is at 100%% — you can unplug now.</string>
 </resources>

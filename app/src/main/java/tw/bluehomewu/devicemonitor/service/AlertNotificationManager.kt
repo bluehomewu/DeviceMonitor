@@ -22,8 +22,8 @@ class AlertNotificationManager(
 
     private val nm = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
 
-    // Track last notified level per device to avoid duplicate alerts at same level
     private val lastNotifiedLevel = mutableMapOf<String, Int>()
+    private val fullChargeNotified = mutableSetOf<String>()
 
     fun createChannel() {
         val channel = NotificationChannel(
@@ -52,8 +52,18 @@ class AlertNotificationManager(
         val level = record.batteryLevel
         val threshold = record.alertThreshold
         val deviceId = record.id
+        val displayName = record.alias ?: record.deviceName
 
         Log.d(TAG, "checkAndNotify: ${record.deviceName} level=$level% threshold=$threshold%")
+
+        if (level == 100 && record.isCharging) {
+            if (fullChargeNotified.add(deviceId)) {
+                Log.i(TAG, "觸發充滿電通知：$displayName")
+                postFullChargeAlert(displayName, deviceId)
+            }
+        } else {
+            fullChargeNotified.remove(deviceId)
+        }
 
         if (level < threshold) {
             if (record.isCharging) {
@@ -93,6 +103,17 @@ class AlertNotificationManager(
         val deviceId = record.id
         val displayName = record.alias ?: record.deviceName
 
+        if (level == 100 && record.isCharging) {
+            if (fullChargeNotified.add(deviceId)) {
+                Log.i(TAG, "共享裝置觸發充滿電通知：$displayName")
+                postFullChargeAlert(displayName, deviceId)
+            }
+            lastNotifiedLevel.remove(deviceId)
+            return
+        } else {
+            fullChargeNotified.remove(deviceId)
+        }
+
         if (record.isCharging) {
             if (lastNotifiedLevel.remove(deviceId) != null) {
                 Log.d(TAG, "$displayName [共享] 充電中，清除通知狀態")
@@ -116,8 +137,23 @@ class AlertNotificationManager(
     /** 取消指定裝置的警報通知並清除狀態（分享被撤銷時呼叫）。 */
     fun cancelAlert(deviceId: String) {
         nm.cancel(deviceId.hashCode())
+        nm.cancel("full_${deviceId}".hashCode())
         lastNotifiedLevel.remove(deviceId)
+        fullChargeNotified.remove(deviceId)
         Log.d(TAG, "警報已撤銷：$deviceId")
+    }
+
+    private fun postFullChargeAlert(deviceName: String, deviceId: String) {
+        val notifId = "full_${deviceId}".hashCode()
+        val notification = NotificationCompat.Builder(context, ALERT_CHANNEL_ID)
+            .setContentTitle(context.getString(R.string.notif_full_charge_title, deviceName))
+            .setContentText(context.getString(R.string.notif_full_charge_text))
+            .setSmallIcon(android.R.drawable.ic_dialog_info)
+            .setPriority(NotificationCompat.PRIORITY_DEFAULT)
+            .setAutoCancel(true)
+            .build()
+        nm.notify(notifId, notification)
+        Log.d(TAG, "充滿電通知已發送：$deviceName")
     }
 
     private fun postAlert(deviceName: String, level: Int, threshold: Int, deviceId: String) {

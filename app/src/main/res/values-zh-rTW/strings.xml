@@ -119,4 +119,6 @@
     <string name="notif_monitor_text">電量 %1$d%%%2$s | %3$s</string>
     <string name="notif_alert_title">低電量警報：%s</string>
     <string name="notif_alert_text">電量剩 %1$d%%，低於警報閾值 %2$d%%</string>
+    <string name="notif_full_charge_title">充滿電：%s</string>
+    <string name="notif_full_charge_text">電量已達 100%%，可以拔除充電線了。</string>
 </resources>
