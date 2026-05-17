@@ -348,7 +348,7 @@ fun DeviceListScreen(
                 var settingsMenuExpanded by remember { mutableStateOf(false) }
                 androidx.compose.foundation.layout.Box {
                     IconButton(onClick = { settingsMenuExpanded = true }) {
-                        Icon(Icons.Default.Tune, contentDescription = "清單設定")
+                        Icon(Icons.Default.Tune, contentDescription = stringResource(R.string.cd_list_settings))
                     }
                     DropdownMenu(
                         expanded = settingsMenuExpanded,
@@ -361,21 +361,21 @@ fun DeviceListScreen(
                         )
                         HorizontalDivider()
                         DropdownMenuItem(
-                            text = { Text("顯示警告閾值") },
+                            text = { Text(stringResource(R.string.menu_show_warning_threshold)) },
                             onClick = { vm.setShowWarningThreshold(!showWarningThreshold) },
                             trailingIcon = if (showWarningThreshold) ({
                                 Icon(Icons.Default.Check, contentDescription = null, modifier = Modifier.size(16.dp))
                             }) else null
                         )
                         DropdownMenuItem(
-                            text = { Text("顯示緊急閾值") },
+                            text = { Text(stringResource(R.string.menu_show_critical_threshold)) },
                             onClick = { vm.setShowCriticalThreshold(!showCriticalThreshold) },
                             trailingIcon = if (showCriticalThreshold) ({
                                 Icon(Icons.Default.Check, contentDescription = null, modifier = Modifier.size(16.dp))
                             }) else null
                         )
                         DropdownMenuItem(
-                            text = { Text("顯示電量歷史圖") },
+                            text = { Text(stringResource(R.string.menu_show_battery_history)) },
                             onClick = { vm.setShowBatteryHistory(!showBatteryHistory) },
                             trailingIcon = if (showBatteryHistory) ({
                                 Icon(Icons.Default.Check, contentDescription = null, modifier = Modifier.size(16.dp))
@@ -473,7 +473,7 @@ fun DeviceListScreen(
                             }) {
                                 Icon(
                                     imageVector = Icons.Filled.PushPin,
-                                    contentDescription = "取消置頂",
+                                    contentDescription = stringResource(R.string.cd_unpin_device),
                                     tint = MaterialTheme.colorScheme.primary
                                 )
                             }
@@ -485,7 +485,7 @@ fun DeviceListScreen(
                             }) {
                                 Icon(
                                     imageVector = Icons.Default.GroupAdd,
-                                    contentDescription = "分享裝置",
+                                    contentDescription = stringResource(R.string.cd_share_device),
                                     tint = MaterialTheme.colorScheme.secondary
                                 )
                             }
@@ -497,7 +497,7 @@ fun DeviceListScreen(
                             }) {
                                 Icon(
                                     imageVector = Icons.Default.Delete,
-                                    contentDescription = "刪除裝置",
+                                    contentDescription = stringResource(R.string.cd_delete_device),
                                     tint = MaterialTheme.colorScheme.error
                                 )
                             }
@@ -548,7 +548,7 @@ fun DeviceListScreen(
                             }) {
                                 Icon(
                                     imageVector = Icons.Outlined.PushPin,
-                                    contentDescription = "置頂",
+                                    contentDescription = stringResource(R.string.cd_pin_device),
                                     tint = MaterialTheme.colorScheme.primary
                                 )
                             }
@@ -560,7 +560,7 @@ fun DeviceListScreen(
                             }) {
                                 Icon(
                                     imageVector = Icons.Default.GroupAdd,
-                                    contentDescription = "分享裝置",
+                                    contentDescription = stringResource(R.string.cd_share_device),
                                     tint = MaterialTheme.colorScheme.secondary
                                 )
                             }
@@ -572,7 +572,7 @@ fun DeviceListScreen(
                             }) {
                                 Icon(
                                     imageVector = Icons.Default.Delete,
-                                    contentDescription = "刪除裝置",
+                                    contentDescription = stringResource(R.string.cd_delete_device),
                                     tint = MaterialTheme.colorScheme.error
                                 )
                             }
@@ -876,7 +876,7 @@ private fun DeviceCard(
                 if (showDragHandle) {
                     Icon(
                         imageVector = Icons.Default.DragHandle,
-                        contentDescription = "拖曳排序",
+                        contentDescription = stringResource(R.string.cd_drag_reorder),
                         modifier = Modifier
                             .size(24.dp)
                             .pointerInput(Unit) {
@@ -926,7 +926,7 @@ private fun DeviceCard(
             if (showBatteryHistory && batteryHistory.size >= 2) {
                 HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
                 Text(
-                    text = "電量歷史（最近 ${batteryHistory.size} 筆）",
+                    text = stringResource(R.string.battery_history_label, batteryHistory.size),
                     style = MaterialTheme.typography.labelSmall,
                     color = LocalContentColor.current.copy(alpha = 0.6f)
                 )

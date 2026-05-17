@@ -125,6 +125,16 @@
     <string name="download_failed">Download failed. Please try again.</string>
     <string name="dialog_set_alias_title">Set Alias</string>
     <string name="dialog_alias_hint">Leave empty to use model name</string>
+    <string name="cd_list_settings">List settings</string>
+    <string name="menu_show_warning_threshold">Show Warning Threshold</string>
+    <string name="menu_show_critical_threshold">Show Critical Threshold</string>
+    <string name="menu_show_battery_history">Show Battery History</string>
+    <string name="cd_pin_device">Pin</string>
+    <string name="cd_unpin_device">Unpin</string>
+    <string name="cd_share_device">Share device</string>
+    <string name="cd_delete_device">Delete device</string>
+    <string name="cd_drag_reorder">Drag to reorder</string>
+    <string name="battery_history_label">Battery history (last %d entries)</string>
 
     <!-- Widget -->
     <string name="widget_description">Shows your device\'s current battery level and status</string>

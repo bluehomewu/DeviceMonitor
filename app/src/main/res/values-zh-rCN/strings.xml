@@ -100,6 +100,16 @@
     <string name="download_failed">下载失败，请再试一次。</string>
     <string name="dialog_set_alias_title">设定别名</string>
     <string name="dialog_alias_hint">留空则使用型号名称</string>
+    <string name="cd_list_settings">清单设定</string>
+    <string name="menu_show_warning_threshold">显示警告阈值</string>
+    <string name="menu_show_critical_threshold">显示紧急阈值</string>
+    <string name="menu_show_battery_history">显示电量历史图</string>
+    <string name="cd_pin_device">置顶</string>
+    <string name="cd_unpin_device">取消置顶</string>
+    <string name="cd_share_device">分享装置</string>
+    <string name="cd_delete_device">删除装置</string>
+    <string name="cd_drag_reorder">拖曳排序</string>
+    <string name="battery_history_label">电量历史（最近 %d 条）</string>
     <string name="widget_description">显示本机的即时电量与连线状态</string>
     <string name="notif_channel_monitor_name">装置监控</string>
     <string name="notif_channel_monitor_desc">显示装置即时状态</string>

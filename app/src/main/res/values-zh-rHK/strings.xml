@@ -100,6 +100,16 @@
     <string name="download_failed">下載失敗，請再試一次。</string>
     <string name="dialog_set_alias_title">設定別名</string>
     <string name="dialog_alias_hint">留空則使用型號名稱</string>
+    <string name="cd_list_settings">清單設定</string>
+    <string name="menu_show_warning_threshold">顯示警告閾值</string>
+    <string name="menu_show_critical_threshold">顯示緊急閾值</string>
+    <string name="menu_show_battery_history">顯示電量歷史圖</string>
+    <string name="cd_pin_device">置頂</string>
+    <string name="cd_unpin_device">取消置頂</string>
+    <string name="cd_share_device">分享裝置</string>
+    <string name="cd_delete_device">刪除裝置</string>
+    <string name="cd_drag_reorder">拖曳排序</string>
+    <string name="battery_history_label">電量歷史（最近 %d 筆）</string>
     <string name="widget_description">顯示本機的即時電量與連線狀態</string>
     <string name="notif_channel_monitor_name">裝置監控</string>
     <string name="notif_channel_monitor_desc">顯示裝置即時狀態</string>
