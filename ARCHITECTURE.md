@@ -85,7 +85,8 @@ create table devices (
   alias           text,                   -- 使用者自訂顯示名稱
   app_version     text,
   signal_level    int,                    -- 訊號格數（0–4）
-  signal_dbm      int
+  signal_dbm      int,
+  fcm_token       text                    -- Firebase Cloud Messaging token（推播通知用）
 );
 
 alter table devices
@@ -216,20 +217,33 @@ create policy "shared_devices_rls" on shared_devices for all
 ```
 每台被監控裝置
   └─ DeviceMonitorService（Foreground Service）
-       ├─ 每 30 秒 upsert devices 表
+       ├─ 每 30 秒 upsert devices 表（含指數退避重試）
        ├─ 電量變化 > 5% 立即 upsert
-       └─ 網路狀態變化立即 upsert
+       ├─ 網路狀態變化立即 upsert
+       └─ 啟動時同步 FCM token 至 devices.fcm_token
 
 主裝置（接收警報）
   └─ RealtimeRepository（Supabase Realtime WebSocket）
        ├─ 訂閱 devices 表變更 → 更新 DeviceStateHolder
        ├─ 訂閱 shared_devices 表 INSERT → 載入夥伴裝置記錄
-       └─ battery_level < alert_threshold → AlertNotificationManager 發本地通知
+       ├─ battery_level < alert_threshold → AlertNotificationManager 發本地通知
+       └─ 斷線 / 重連 → isRealtimeConnected StateFlow → UI 顯示提示橫幅
+
+FCM 推播（背景通知）
+  FcmService（extends FirebaseMessagingService）
+       ├─ onNewToken() → 更新 devices.fcm_token（透過 FcmTokenManager）
+       └─ onMessageReceived() → 顯示推播通知
+
+首頁 Widget（Jetpack Glance）
+  DeviceWidget（GlanceAppWidget）
+       └─ DeviceWidgetReceiver（GlanceAppWidgetReceiver）
+            └─ DeviceMonitorService 更新後呼叫 updateAll()
 
 夥伴模式資料流
   邀請方：generateInvite() → partnerships + shared_devices
   受邀方：claimInvite() → partnerships.uid_b + status='active'
   雙方：RealtimeRepository 監聽 shared_devices → PartnerStateHolder
+  離線時：PartnerStateHolder 保留最後快取，UI 顯示 last-known 狀態
 
 後端（Supabase）
   ├─ Postgres：儲存所有狀態
@@ -246,13 +260,18 @@ create policy "shared_devices_rls" on shared_devices for all
 | `AppModule` | `di/AppModule.kt` | 全域 singleton DI 容器 |
 | `DeviceStateHolder` | `data/memory/` | 裝置清單的 in-memory StateFlow 快取 |
 | `PartnerStateHolder` | `data/memory/` | 夥伴關係、共享裝置的 in-memory 快取 |
-| `RealtimeRepository` | `data/remote/` | Supabase Realtime 訂閱，驅動兩個 StateHolder |
+| `RealtimeRepository` | `data/remote/` | Supabase Realtime 訂閱，驅動兩個 StateHolder；暴露 `isRealtimeConnected` StateFlow |
 | `DeviceRepository` | `data/remote/` | devices 表 CRUD |
 | `PartnerRepository` | `data/remote/` | partnerships / shared_devices CRUD |
 | `PartnerNamingManager` | `data/local/` | 夥伴名稱 / 裝置別名的 SharedPreferences 持久化 |
 | `PinnedOrderManager` | `data/local/` | 置頂排序的 SharedPreferences 持久化 |
-| `AlertNotificationManager` | `service/` | 低電量本地通知邏輯 |
+| `BatteryHistoryManager` | `data/local/` | 電量歷史記錄（最近 5 筆）的 SharedPreferences 持久化 |
+| `FcmTokenManager` | `data/local/` | FCM token 本地快取，並在 `DeviceMonitorService` 啟動時同步至 `devices.fcm_token` |
+| `AlertNotificationManager` | `service/` | 低電量本地通知邏輯（含雙層閾值、充滿電、離線通知） |
 | `GoogleAuthManager` | `auth/` | Google Sign-In → Supabase OAuth |
+| `FcmService` | `fcm/` | `FirebaseMessagingService`：處理 token refresh 與背景推播訊息接收 |
+| `DeviceWidget` | `widget/` | Jetpack Glance `GlanceAppWidget`，渲染首頁 Widget 內容 |
+| `DeviceWidgetReceiver` | `widget/` | `GlanceAppWidgetReceiver`，連結 Glance Widget 與 Android App Widget 系統 |
 
 ---
 
@@ -328,6 +347,40 @@ where devices.id = shared_devices.device_id
 | `dalias_$deviceId` | 夥伴裝置本機別名（也用於低電量通知） |
 
 `_localVersion: MutableStateFlow<Int>` 在名稱變更時遞增，觸發 `combine()` 重新計算，讓 UI 立即反映更新。
+
+### Firebase 程式化初始化（無 google-services.json）
+
+FCM 不透過 `google-services.json`，改用程式化建立 `FirebaseOptions`：
+
+```kotlin
+val options = FirebaseOptions.Builder()
+    .setApplicationId(BuildConfig.FIREBASE_APP_ID)
+    .setApiKey(BuildConfig.FIREBASE_API_KEY)
+    .setGcmSenderId(BuildConfig.FIREBASE_SENDER_ID)
+    .setProjectId(BuildConfig.FIREBASE_PROJECT_ID)
+    .build()
+FirebaseApp.initializeApp(context, options)
+```
+
+四個參數從 `local.properties` 透過 `buildConfigField` 注入，不進版本控制。`FcmService` 繼承 `FirebaseMessagingService`，在 `AndroidManifest.xml` 中以 `intent-filter` 宣告，不需要 `apply plugin: 'com.google.gms.google-services'`。
+
+### 清單顯示設定（list_display_prefs）
+
+`DeviceListViewModel` 使用 `SharedPreferences` name `"list_display_prefs"` 持久化三個顯示開關：
+
+| Key | 預設值 | 用途 |
+|---|---|---|
+| `show_warning_threshold` | `false` | 顯示警告閾值滑桿 |
+| `show_critical_threshold` | `false` | 顯示緊急閾值滑桿 |
+| `show_battery_history` | `false` | 顯示電量歷史圖 |
+
+緊急閾值（critical threshold）純粹儲存在本機 `app_prefs`（key：`critical_threshold_$deviceId`），不寫入 Supabase。警告閾值（`alert_threshold`）才是寫入 `devices` 表的欄位。
+
+### Jetpack Glance Widget
+
+`DeviceWidget` 繼承 `GlanceAppWidget`，透過 `DeviceWidgetReceiver`（繼承 `GlanceAppWidgetReceiver`）與 Android App Widget 系統整合。`DeviceMonitorService` 在每次 upsert 完成後呼叫 `DeviceWidget().updateAll(context)` 觸發 Widget 重繪。
+
+注意：Glance 1.1.1 的 `ColorProvider` 只接受單一參數（不支援 `day`/`night` 兩參數版本）；`clickable` 需從 `androidx.glance.action.clickable` 匯入，而非 `androidx.glance.clickable`。
 
 ### 強制重新登入機制
 

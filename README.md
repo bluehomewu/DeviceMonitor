@@ -9,18 +9,50 @@ No self-hosted server required — just sign in with a Google account and start 
 
 ## Features
 
+### Monitoring & Display
+
 - Real-time display of battery level, charging state, and network type (Wi-Fi / 4G / LTE / 5G NSA / 5G SA) for all devices
 - Wi-Fi shows SSID; mobile network shows carrier name and signal strength (bars + dBm)
-- Low-battery alerts: master device receives a local notification when a device drops below the threshold (silenced while charging; alert fires immediately once charging stops if still below threshold)
-- Master device setting: designate one device to receive all alerts
-- Adjustable alert threshold (10% steps, 10–100%)
-- Device alias: set a custom display name for each device
+- **Battery history chart**: the last 5 battery readings are displayed as a mini trend chart on each device card (toggle visibility via display settings)
+- **Home screen widget**: a Jetpack Glance widget shows key device stats directly on your launcher
+- **Realtime connection status**: a banner appears when the WebSocket connection drops and disappears automatically on reconnect
+- **Sort order**: tap the sort button to cycle between name (default), battery ascending, battery descending, and offline-first (stale or offline devices float to the top)
+- **Display settings** (Tune button in the header): toggle the visibility of warning threshold sliders, critical threshold sliders, and the battery history chart on device cards; also the entry point for inviting a new partner
+
+### Alerts & Notifications
+
+- Low-battery alerts: the master device receives a local notification when a device drops below the warning threshold (silenced while charging; fires immediately once charging stops if still below threshold)
+- **Two-tier alert thresholds**: each device has an independent warning threshold (adjustable in 10% steps, 10–100%) and critical threshold (default: half the warning threshold, min 10%), shown with distinct red styling
+- **Full-charge notification**: a notification fires when a device reaches 100%
+- **Offline notification**: a notification fires when a device stops reporting for more than 3 minutes
+- **FCM push notifications**: Firebase Cloud Messaging delivers alerts even when the app is in the background or closed
+- Master device setting: designate one device to receive all alerts (only one per account)
+- **Quiet hours**: configure a time window during which all notifications are silenced
+- Device alias: set a custom display name for each device (also used in alert notifications)
+
+### Device List
+
 - **Pinned devices**: your own device is always at the top; swipe right on any card to pin it; pinned devices support long-press drag-to-reorder
 - **Delete device**: enable delete mode in settings to reveal a delete button on each card (swipe right); supports multi-select — tap cards to select, then tap the header button to batch-delete; delete mode auto-disables 60 seconds after the last deletion
-- **Partner mode**: share device monitoring across different Google accounts — generate an 8-character invite code (with QR code) and let the other user scan or enter it; manage which devices are shared per partner; set custom display names for partners and aliases for their devices (aliases are also used in low-battery notifications); share or unshare a device directly from the monitor list with a swipe
+- **Batch alert threshold**: with multiple cards selected in delete mode, set the warning threshold for all selected devices at once
+- Pull-to-refresh: swipe down to force-reload all device data
+
+### Partner Mode
+
+- Share device monitoring across different Google accounts — generate an 8-character invite code (with QR code); invite codes expire after 30 minutes (countdown shown)
+- Manage which devices are shared per partner; set custom display names for partners and aliases for their devices (aliases are also used in low-battery notifications)
+- **Share directly from the monitor list**: swipe right on any device card to reveal a share button and toggle sharing per partner without leaving the list
+- Each partner independently controls whether they receive low-battery alerts for each shared device
+- **Partner share notification**: receive a notification when a partner shares a new device with you
+- **Offline cache**: partner device cards remain visible with last-known state even when the WebSocket is temporarily disconnected
+- Up to 5 partners per account
+
+### Reliability
+
+- Continuous background monitoring — uploads device status even when the screen is off
+- **Exponential backoff**: failed upserts are automatically retried with increasing delays to handle transient network errors
 - **In-app update**: automatically checks for new versions on launch; download and install the APK without leaving the app
 - **Beta update channel**: opt in to receive beta releases (tagged with `-beta`) instead of stable-only updates
-- Continuous background monitoring — uploads status even when the screen is off
 
 ---
 
@@ -63,6 +95,9 @@ Only one master device is allowed per account.
 | Tap a card | Expand / collapse device details (or toggle selection in delete mode) |
 | Tap the pencil icon | Set a device alias |
 | Tap "Delete (N)" in the header | Batch-delete all selected devices (visible when delete mode is on and at least one card is selected) |
+| Tap the sort icon in the header | Cycle through sort orders: name / battery ↑ / battery ↓ / offline-first |
+| Tap the Tune icon in the header | Open display settings: toggle threshold sliders and battery history chart; invite a new partner |
+| Pull down on the list | Force-refresh all device data |
 
 Your own device is always fixed at the very top of the list and cannot be displaced.
 
