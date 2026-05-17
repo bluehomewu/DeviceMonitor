@@ -109,10 +109,10 @@ Partner mode lets two users on **different Google accounts** monitor each other'
 
 ### Adding a partner
 
-1. Open the **Partner** tab → tap **Create Invite**
+1. Open the **Partner** tab → tap **Invite Partner**
 2. Select the devices to share (a select-all option is available), then tap **Generate Invite Code**
 3. Share the 8-character code or QR code with the other user
-4. The other user opens the **Partner** tab → **Join with Code** → type the code manually or tap the QR icon to scan it
+4. The other user opens the **Partner** tab → tap **Enter Invite Code** → type the code manually or tap the QR icon to scan it
 5. Pairing is complete — both users can now see each other's shared devices
 
 ### Managing shared devices
