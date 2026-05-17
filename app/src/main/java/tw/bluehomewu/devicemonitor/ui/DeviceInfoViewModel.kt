@@ -7,7 +7,6 @@ import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
-import android.os.Build
 import android.os.Environment
 import android.os.PowerManager
 import androidx.core.content.FileProvider
@@ -264,7 +263,7 @@ class DeviceInfoViewModel(application: Application) : AndroidViewModel(applicati
             if (devices.isEmpty()) {
                 prefs.getBoolean("is_master", false)
             } else {
-                val value = devices.find { it.deviceName == Build.MODEL }?.isMaster ?: false
+                val value = devices.find { it.deviceId == AppModule.thisDeviceId }?.isMaster ?: false
                 prefs.edit().putBoolean("is_master", value).apply()
                 value
             }
@@ -296,7 +295,7 @@ class DeviceInfoViewModel(application: Application) : AndroidViewModel(applicati
         viewModelScope.launch {
             val uid = supabase.auth.currentUserOrNull()?.id ?: return@launch
             val currentDevice = deviceStateHolder.devices.value
-                .find { it.deviceName == Build.MODEL } ?: return@launch
+                .find { it.deviceId == AppModule.thisDeviceId } ?: return@launch
 
             if (master) {
                 deviceStateHolder.setAll(
