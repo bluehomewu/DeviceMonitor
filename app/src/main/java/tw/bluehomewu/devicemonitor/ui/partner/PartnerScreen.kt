@@ -55,6 +55,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardCapitalization
@@ -70,6 +71,7 @@ import com.journeyapps.barcodescanner.ScanContract
 import com.journeyapps.barcodescanner.ScanOptions
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import tw.bluehomewu.devicemonitor.R
 import tw.bluehomewu.devicemonitor.data.remote.DeviceRecord
 import tw.bluehomewu.devicemonitor.data.remote.PartnerRepository
 
@@ -100,6 +102,9 @@ fun PartnerScreen(
     var renamingDeviceId by remember { mutableStateOf<String?>(null) }
     var renameDeviceInput by remember { mutableStateOf("") }
 
+    val joinSuccessMsg = stringResource(R.string.partner_join_success)
+    val maxReachedMsg = stringResource(R.string.partner_max_reached, PartnerRepository.MAX_PARTNERS)
+
     // Error → Snackbar
     LaunchedEffect(error) {
         error?.let {
@@ -112,7 +117,7 @@ fun PartnerScreen(
         if (joinSuccess) {
             showJoinSheet = false
             vm.clearJoinSuccess()
-            snackbar.showSnackbar("夥伴配對成功！")
+            snackbar.showSnackbar(joinSuccessMsg)
         }
     }
 
@@ -128,7 +133,7 @@ fun PartnerScreen(
                 Button(
                     onClick = {
                         if (partners.size >= PartnerRepository.MAX_PARTNERS) {
-                            scope.launch { snackbar.showSnackbar("最多只能有 ${PartnerRepository.MAX_PARTNERS} 個夥伴") }
+                            scope.launch { snackbar.showSnackbar(maxReachedMsg) }
                         } else {
                             showInviteSheet = true
                         }
@@ -137,7 +142,7 @@ fun PartnerScreen(
                 ) {
                     Icon(Icons.Default.PersonAdd, contentDescription = null, modifier = Modifier.size(18.dp))
                     Spacer(Modifier.width(4.dp))
-                    Text("邀請夥伴")
+                    Text(stringResource(R.string.partner_invite_button))
                 }
                 OutlinedButton(
                     onClick = { showJoinSheet = true },
@@ -145,7 +150,7 @@ fun PartnerScreen(
                 ) {
                     Icon(Icons.Default.QrCode, contentDescription = null, modifier = Modifier.size(18.dp))
                     Spacer(Modifier.width(4.dp))
-                    Text("輸入邀請碼")
+                    Text(stringResource(R.string.partner_join_button))
                 }
             }
 
@@ -160,10 +165,10 @@ fun PartnerScreen(
                             tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f)
                         )
                         Spacer(Modifier.height(12.dp))
-                        Text("暫無夥伴", style = MaterialTheme.typography.titleMedium)
+                        Text(stringResource(R.string.partner_empty_title), style = MaterialTheme.typography.titleMedium)
                         Spacer(Modifier.height(4.dp))
                         Text(
-                            "邀請夥伴即可共享裝置狀態與低電量警報",
+                            stringResource(R.string.partner_empty_hint),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -259,12 +264,12 @@ fun PartnerScreen(
     renamingDeviceId?.let { deviceId ->
         AlertDialog(
             onDismissRequest = { renamingDeviceId = null },
-            title = { Text("設定裝置別名") },
+            title = { Text(stringResource(R.string.dialog_set_alias_title)) },
             text = {
                 OutlinedTextField(
                     value = renameDeviceInput,
                     onValueChange = { renameDeviceInput = it },
-                    label = { Text("別名（留空還原預設）") },
+                    label = { Text(stringResource(R.string.partner_alias_label)) },
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth()
                 )
@@ -273,10 +278,10 @@ fun PartnerScreen(
                 TextButton(onClick = {
                     vm.setSharedDeviceAlias(deviceId, renameDeviceInput.takeIf { it.isNotBlank() })
                     renamingDeviceId = null
-                }) { Text("確認") }
+                }) { Text(stringResource(R.string.action_confirm)) }
             },
             dismissButton = {
-                TextButton(onClick = { renamingDeviceId = null }) { Text("取消") }
+                TextButton(onClick = { renamingDeviceId = null }) { Text(stringResource(R.string.action_cancel)) }
             }
         )
     }
@@ -285,12 +290,12 @@ fun PartnerScreen(
     renamingEntry?.let { entry ->
         AlertDialog(
             onDismissRequest = { renamingEntry = null },
-            title = { Text("設定夥伴名稱") },
+            title = { Text(stringResource(R.string.partner_rename_partner_title)) },
             text = {
                 OutlinedTextField(
                     value = renameInput,
                     onValueChange = { renameInput = it },
-                    label = { Text("顯示名稱（留空還原預設）") },
+                    label = { Text(stringResource(R.string.partner_rename_hint)) },
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth()
                 )
@@ -299,10 +304,10 @@ fun PartnerScreen(
                 TextButton(onClick = {
                     vm.renamePartner(entry.partnership.id, renameInput.takeIf { it.isNotBlank() })
                     renamingEntry = null
-                }) { Text("確認") }
+                }) { Text(stringResource(R.string.action_confirm)) }
             },
             dismissButton = {
-                TextButton(onClick = { renamingEntry = null }) { Text("取消") }
+                TextButton(onClick = { renamingEntry = null }) { Text(stringResource(R.string.action_cancel)) }
             }
         )
     }
@@ -311,16 +316,16 @@ fun PartnerScreen(
     dissolveTarget?.let { pid ->
         AlertDialog(
             onDismissRequest = { dissolveTarget = null },
-            title = { Text("解除夥伴關係") },
-            text = { Text("解除後雙方將無法再看到彼此的共享裝置，且所有警報設定將清除。確定解除？") },
+            title = { Text(stringResource(R.string.partner_dissolve_title)) },
+            text = { Text(stringResource(R.string.partner_dissolve_message)) },
             confirmButton = {
                 TextButton(onClick = {
                     vm.dissolvePartnership(pid)
                     dissolveTarget = null
-                }) { Text("解除", color = MaterialTheme.colorScheme.error) }
+                }) { Text(stringResource(R.string.partner_dissolve_confirm), color = MaterialTheme.colorScheme.error) }
             },
             dismissButton = {
-                TextButton(onClick = { dissolveTarget = null }) { Text("取消") }
+                TextButton(onClick = { dissolveTarget = null }) { Text(stringResource(R.string.action_cancel)) }
             }
         )
     }
@@ -355,7 +360,7 @@ private fun PartnerCard(
                 Spacer(Modifier.width(8.dp))
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        entry.customName ?: "夥伴 ${entry.partnerUidLabel}",
+                        entry.customName ?: stringResource(R.string.partner_default_name, entry.partnerUidLabel),
                         style = MaterialTheme.typography.titleMedium
                     )
                     if (entry.customName != null) {
@@ -367,17 +372,17 @@ private fun PartnerCard(
                     }
                 }
                 IconButton(onClick = onRename, modifier = Modifier.size(36.dp)) {
-                    Icon(Icons.Default.Edit, contentDescription = "重新命名", modifier = Modifier.size(18.dp))
+                    Icon(Icons.Default.Edit, contentDescription = stringResource(R.string.partner_rename_cd), modifier = Modifier.size(18.dp))
                 }
                 TextButton(onClick = onManageSharing) {
                     Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(16.dp))
                     Spacer(Modifier.width(2.dp))
-                    Text("管理分享", style = MaterialTheme.typography.labelSmall)
+                    Text(stringResource(R.string.partner_manage_sharing), style = MaterialTheme.typography.labelSmall)
                 }
                 IconButton(onClick = onDissolve) {
                     Icon(
                         Icons.Default.Delete,
-                        contentDescription = "解除夥伴",
+                        contentDescription = stringResource(R.string.partner_dissolve_cd),
                         tint = MaterialTheme.colorScheme.error
                     )
                 }
@@ -387,12 +392,12 @@ private fun PartnerCard(
             if (entry.sharedWithMe.isNotEmpty()) {
                 HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
                 Text(
-                    "他分享給我的裝置 (${entry.sharedWithMe.size})",
+                    stringResource(R.string.partner_devices_with_me, entry.sharedWithMe.size),
                     style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
                 entry.sharedWithMe.forEach { item ->
-                    val label = item.record?.let { it.alias ?: it.deviceName } ?: "載入中…"
+                    val label = item.record?.let { it.alias ?: it.deviceName } ?: stringResource(R.string.label_loading)
                     SharedDeviceRow(
                         label = label,
                         batteryLevel = item.record?.batteryLevel,
@@ -407,7 +412,7 @@ private fun PartnerCard(
             if (entry.sharedByMe.isNotEmpty()) {
                 HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
                 Text(
-                    "我分享給他的裝置 (${entry.sharedByMe.size})",
+                    stringResource(R.string.partner_devices_by_me, entry.sharedByMe.size),
                     style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -428,7 +433,7 @@ private fun PartnerCard(
                         IconButton(onClick = { onRemoveShared(item.shared.id) }) {
                             Icon(
                                 Icons.Default.Close,
-                                contentDescription = "取消分享",
+                                contentDescription = stringResource(R.string.partner_unshare_cd),
                                 tint = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
@@ -439,7 +444,7 @@ private fun PartnerCard(
             if (entry.sharedWithMe.isEmpty() && entry.sharedByMe.isEmpty()) {
                 HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
                 Text(
-                    "尚未分享任何裝置",
+                    stringResource(R.string.partner_no_devices_yet),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -465,12 +470,20 @@ private fun SharedDeviceRow(
         Column(modifier = Modifier.weight(1f)) {
             Text(label, style = MaterialTheme.typography.bodyMedium, maxLines = 1, overflow = TextOverflow.Ellipsis)
             batteryLevel?.let {
-                Text("電量：$it%", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(
+                    stringResource(R.string.label_battery_pct, it),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
             }
         }
         IconButton(onClick = onRenameClick, modifier = Modifier.size(32.dp)) {
-            Icon(Icons.Default.Edit, contentDescription = "設定別名", modifier = Modifier.size(16.dp),
-                tint = MaterialTheme.colorScheme.onSurfaceVariant)
+            Icon(
+                Icons.Default.Edit,
+                contentDescription = stringResource(R.string.dialog_set_alias_title),
+                modifier = Modifier.size(16.dp),
+                tint = MaterialTheme.colorScheme.onSurfaceVariant
+            )
         }
         Icon(
             if (receiveAlerts) Icons.Default.Notifications else Icons.Default.NotificationsOff,
@@ -505,12 +518,12 @@ private fun InviteSheet(
                 .padding(bottom = 32.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            Text("邀請夥伴", style = MaterialTheme.typography.titleLarge)
+            Text(stringResource(R.string.partner_invite_button), style = MaterialTheme.typography.titleLarge)
 
             if (inviteCode == null) {
                 // Step 1: device selection
                 Text(
-                    "選擇要分享的裝置（可多選或全選）",
+                    stringResource(R.string.partner_invite_select_hint),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -531,7 +544,7 @@ private fun InviteSheet(
                                     else selected.clear()
                                 }
                             )
-                            Text("全選", style = MaterialTheme.typography.bodyMedium)
+                            Text(stringResource(R.string.action_select_all), style = MaterialTheme.typography.bodyMedium)
                         }
                     }
                     items(ownDevices, key = { it.id }) { device ->
@@ -547,7 +560,11 @@ private fun InviteSheet(
                             )
                             Column {
                                 Text(device.alias ?: device.deviceName, style = MaterialTheme.typography.bodyMedium)
-                                Text("電量：${device.batteryLevel}%", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                Text(
+                                    stringResource(R.string.label_battery_pct, device.batteryLevel),
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
                             }
                         }
                     }
@@ -557,20 +574,20 @@ private fun InviteSheet(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    TextButton(onClick = onDismiss, modifier = Modifier.weight(1f)) { Text("取消") }
+                    TextButton(onClick = onDismiss, modifier = Modifier.weight(1f)) { Text(stringResource(R.string.action_cancel)) }
                     Button(
                         onClick = { onGenerate(selected.toList()) },
                         enabled = !isLoading,
                         modifier = Modifier.weight(1f)
                     ) {
                         if (isLoading) CircularProgressIndicator(modifier = Modifier.size(18.dp))
-                        else Text("產生邀請碼")
+                        else Text(stringResource(R.string.partner_generate_code))
                     }
                 }
             } else {
                 // Step 2: show QR + code
                 Text(
-                    "將以下邀請碼或 QR Code 提供給夥伴",
+                    stringResource(R.string.partner_code_hint),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -578,7 +595,7 @@ private fun InviteSheet(
                     Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
                         Image(
                             painter = BitmapPainter(bmp.asImageBitmap()),
-                            contentDescription = "QR Code",
+                            contentDescription = stringResource(R.string.partner_qr_cd),
                             modifier = Modifier.size(200.dp)
                         )
                     }
@@ -594,7 +611,7 @@ private fun InviteSheet(
                     )
                 }
                 Text(
-                    "邀請碼使用一次後即失效。",
+                    stringResource(R.string.partner_code_one_time),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -611,13 +628,18 @@ private fun InviteSheet(
                 }
                 val countdownColor = if (secondsLeft <= 60L) MaterialTheme.colorScheme.error
                                      else MaterialTheme.colorScheme.onSurfaceVariant
+                val expiryText = if (secondsLeft > 0L)
+                    stringResource(R.string.partner_invite_expiry, secondsLeft / 60, secondsLeft % 60)
+                else
+                    stringResource(R.string.partner_invite_expired)
                 Text(
-                    text = if (secondsLeft > 0L) "有效期限：%02d:%02d".format(secondsLeft / 60, secondsLeft % 60)
-                           else "邀請碼已過期",
+                    text = expiryText,
                     style = MaterialTheme.typography.bodySmall,
                     color = countdownColor
                 )
-                Button(onClick = onDismiss, modifier = Modifier.fillMaxWidth()) { Text("完成") }
+                Button(onClick = onDismiss, modifier = Modifier.fillMaxWidth()) {
+                    Text(stringResource(R.string.action_done))
+                }
             }
         }
     }
@@ -633,6 +655,7 @@ private fun JoinSheet(
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     var input by remember { mutableStateOf("") }
 
+    val scanPrompt = stringResource(R.string.partner_scan_prompt)
     val scanLauncher = rememberLauncherForActivityResult(ScanContract()) { result ->
         val scanned = result.contents ?: return@rememberLauncherForActivityResult
         val filtered = scanned.filter { it.isLetterOrDigit() }.uppercase().take(8)
@@ -646,9 +669,9 @@ private fun JoinSheet(
                 .padding(bottom = 32.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            Text("加入夥伴", style = MaterialTheme.typography.titleLarge)
+            Text(stringResource(R.string.partner_join_title), style = MaterialTheme.typography.titleLarge)
             Text(
-                "請輸入夥伴裝置上顯示的 8 碼邀請碼，或掃描 QR Code",
+                stringResource(R.string.partner_join_hint),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -662,7 +685,7 @@ private fun JoinSheet(
                         val filtered = v.filter { it.isLetterOrDigit() }.uppercase()
                         if (filtered.length <= 8) input = filtered
                     },
-                    label = { Text("邀請碼") },
+                    label = { Text(stringResource(R.string.partner_code_label)) },
                     placeholder = { Text("ABCD1234") },
                     singleLine = true,
                     keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Characters),
@@ -677,28 +700,30 @@ private fun JoinSheet(
                     onClick = {
                         scanLauncher.launch(
                             ScanOptions().apply {
-                                setPrompt("掃描邀請碼 QR Code")
+                                setPrompt(scanPrompt)
                                 setBeepEnabled(false)
                                 setOrientationLocked(true)
                             }
                         )
                     }
                 ) {
-                    Icon(Icons.Default.QrCode, contentDescription = "掃描 QR Code")
+                    Icon(Icons.Default.QrCode, contentDescription = stringResource(R.string.partner_scan_cd))
                 }
             }
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                TextButton(onClick = onDismiss, enabled = !isLoading, modifier = Modifier.weight(1f)) { Text("取消") }
+                TextButton(onClick = onDismiss, enabled = !isLoading, modifier = Modifier.weight(1f)) {
+                    Text(stringResource(R.string.action_cancel))
+                }
                 Button(
                     onClick = { if (input.length == 8) onClaim(input) },
                     enabled = input.length == 8 && !isLoading,
                     modifier = Modifier.weight(1f)
                 ) {
                     if (isLoading) CircularProgressIndicator(modifier = Modifier.size(18.dp))
-                    else Text("確認加入")
+                    else Text(stringResource(R.string.partner_confirm_join))
                 }
             }
         }
@@ -724,10 +749,10 @@ private fun ManageShareSheet(
                 .padding(bottom = 32.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            Text("追加分享裝置給 $partnerLabel", style = MaterialTheme.typography.titleMedium)
+            Text(stringResource(R.string.partner_add_devices_title, partnerLabel), style = MaterialTheme.typography.titleMedium)
             if (availableDevices.isEmpty()) {
                 Text(
-                    "所有裝置都已分享給此夥伴",
+                    stringResource(R.string.partner_all_shared),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -749,7 +774,7 @@ private fun ManageShareSheet(
                                     else selected.clear()
                                 }
                             )
-                            Text("全選", style = MaterialTheme.typography.bodyMedium)
+                            Text(stringResource(R.string.action_select_all), style = MaterialTheme.typography.bodyMedium)
                         }
                     }
                     items(availableDevices, key = { it.id }) { device ->
@@ -772,14 +797,14 @@ private fun ManageShareSheet(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                TextButton(onClick = onDismiss, modifier = Modifier.weight(1f)) { Text("取消") }
+                TextButton(onClick = onDismiss, modifier = Modifier.weight(1f)) { Text(stringResource(R.string.action_cancel)) }
                 Button(
                     onClick = { onAdd(selected.toList()) },
                     enabled = selected.isNotEmpty() && !isLoading,
                     modifier = Modifier.weight(1f)
                 ) {
                     if (isLoading) CircularProgressIndicator(modifier = Modifier.size(18.dp))
-                    else Text("確認分享")
+                    else Text(stringResource(R.string.partner_confirm_share))
                 }
             }
         }

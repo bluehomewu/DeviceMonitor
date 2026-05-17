@@ -31,11 +31,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.painter.BitmapPainter
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import tw.bluehomewu.devicemonitor.R
 import tw.bluehomewu.devicemonitor.data.remote.DeviceRecord
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -64,7 +66,7 @@ fun ShareDeviceSheet(
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             Text(
-                text = "分享「$deviceLabel」",
+                text = stringResource(R.string.partner_share_title, deviceLabel),
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold
             )
@@ -77,14 +79,14 @@ fun ShareDeviceSheet(
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     Text(
-                        text = "將邀請碼提供給對方掃描或輸入",
+                        text = stringResource(R.string.partner_share_invite_hint),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                     inviteQrBitmap?.let { bmp ->
                         Image(
                             painter = BitmapPainter(bmp.asImageBitmap()),
-                            contentDescription = "邀請 QR Code",
+                            contentDescription = stringResource(R.string.partner_qr_cd),
                             modifier = Modifier.size(160.dp)
                         )
                     }
@@ -98,14 +100,14 @@ fun ShareDeviceSheet(
                     )
                     Spacer(Modifier.height(4.dp))
                     TextButton(onClick = { partnerVm.clearInvite(); onDismiss() }) {
-                        Text("完成")
+                        Text(stringResource(R.string.action_done))
                     }
                 }
             } else {
                 // Existing partners with per-partner toggle
                 if (partners.isNotEmpty()) {
                     Text(
-                        text = "分享給現有夥伴",
+                        text = stringResource(R.string.partner_share_to_existing),
                         style = MaterialTheme.typography.labelMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -125,7 +127,7 @@ fun ShareDeviceSheet(
                                 )
                                 Spacer(Modifier.width(8.dp))
                                 Text(
-                                    text = entry.customName ?: "夥伴 ${entry.partnerUidLabel}",
+                                    text = entry.customName ?: stringResource(R.string.partner_default_name, entry.partnerUidLabel),
                                     style = MaterialTheme.typography.bodyMedium
                                 )
                             }
@@ -162,7 +164,7 @@ fun ShareDeviceSheet(
                             modifier = Modifier.size(16.dp)
                         )
                         Spacer(Modifier.width(8.dp))
-                        Text("邀請新夥伴（含此裝置）")
+                        Text(stringResource(R.string.partner_invite_new_with_device))
                     }
                 }
             }

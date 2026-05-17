@@ -183,7 +183,7 @@ class MainActivity : ComponentActivity() {
                                             icon = {
                                                 Icon(Icons.Default.Favorite, contentDescription = null)
                                             },
-                                            label = { Text("夥伴") }
+                                            label = { Text(stringResource(R.string.tab_partner)) }
                                         )
                                     }
                                 }

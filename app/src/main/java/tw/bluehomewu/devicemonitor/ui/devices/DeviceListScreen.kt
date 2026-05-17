@@ -356,7 +356,7 @@ fun DeviceListScreen(
                     ) {
                         DropdownMenuItem(
                             leadingIcon = { Icon(Icons.Default.GroupAdd, contentDescription = null) },
-                            text = { Text("邀請裝置加入") },
+                            text = { Text(stringResource(R.string.partner_pair_device)) },
                             onClick = { onPairDevice(); settingsMenuExpanded = false }
                         )
                         HorizontalDivider()
