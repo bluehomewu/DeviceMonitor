@@ -1,7 +1,7 @@
 name: Supabase Keep-Alive
 
-# Supabase 免費方案：7 天無請求後專案會被暫停。
-# 此 Workflow 每日發送一次請求，確保專案持續存活。
+# 每日 ping 一次 /auth/v1/health，確認自架 Supabase 服務正常運行。
+# /auth/v1/health 不需要任何 auth header，正常時回傳 HTTP 200。
 
 on:
   schedule:
@@ -10,7 +10,7 @@ on:
 
 jobs:
   ping:
-    name: Ping Supabase REST API
+    name: Ping Supabase Health
     runs-on: ubuntu-latest
     timeout-minutes: 5
 
@@ -18,35 +18,23 @@ jobs:
       - name: Ping Supabase
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
-          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
         run: |
           # 清除複製貼上時可能混入的換行 / 空白 / 結尾斜線
-          URL="$(echo -n "$SUPABASE_URL"  | tr -d '[:space:]')"
-          KEY="$(echo -n "$SUPABASE_ANON_KEY" | tr -d '[:space:]')"
+          URL="$(echo -n "$SUPABASE_URL" | tr -d '[:space:]')"
           URL="${URL%/}"
 
-          echo "URL length : ${#URL}"
-          echo "KEY length : ${#KEY}"
+          echo "Target: $URL/auth/v1/health"
 
-          # /rest/v1/ 現已限制 service_role only；改查 devices 表觸發真實 DB 請求
-          # anon key + RLS → 回傳 [] 但 HTTP 200，足以讓 Supabase 維持存活
-          RESPONSE=$(curl -s -w "\n%{http_code}" --max-time 15 \
-            "$URL/rest/v1/devices?limit=1" \
-            -H "apikey: $KEY" \
-            -H "Authorization: Bearer $KEY")
-
-          HTTP_STATUS=$(echo "$RESPONSE" | tail -1)
+          HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" --max-time 15 \
+            "$URL/auth/v1/health")
 
           echo "HTTP Status: $HTTP_STATUS"
 
           if [ "$HTTP_STATUS" = "000" ]; then
-            echo "::error::Supabase 無法連線（curl timeout 或網路錯誤），專案可能已暫停"
+            echo "::error::Supabase 無法連線（curl timeout 或網路錯誤）"
             exit 1
           elif [ "$HTTP_STATUS" -ge 500 ]; then
             echo "::error::Supabase 回應 $HTTP_STATUS，伺服器異常"
-            exit 1
-          elif [ "$HTTP_STATUS" -ge 400 ]; then
-            echo "::error::Supabase 回應 $HTTP_STATUS，請確認 GitHub Secret SUPABASE_URL / SUPABASE_ANON_KEY 是否正確"
             exit 1
           else
             echo "Supabase ping 成功 (HTTP $HTTP_STATUS)"
