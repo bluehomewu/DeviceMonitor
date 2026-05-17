@@ -163,14 +163,24 @@ class DeviceListViewModel(
     private val listDisplayPrefs = getApplication<Application>()
         .getSharedPreferences("list_display_prefs", Context.MODE_PRIVATE)
 
-    private val _showAlertThreshold = MutableStateFlow(
-        listDisplayPrefs.getBoolean("show_alert_threshold", false)
+    private val _showWarningThreshold = MutableStateFlow(
+        listDisplayPrefs.getBoolean("show_warning_threshold", false)
     )
-    val showAlertThreshold: StateFlow<Boolean> = _showAlertThreshold.asStateFlow()
+    val showWarningThreshold: StateFlow<Boolean> = _showWarningThreshold.asStateFlow()
 
-    fun setShowAlertThreshold(value: Boolean) {
-        _showAlertThreshold.value = value
-        listDisplayPrefs.edit().putBoolean("show_alert_threshold", value).apply()
+    fun setShowWarningThreshold(value: Boolean) {
+        _showWarningThreshold.value = value
+        listDisplayPrefs.edit().putBoolean("show_warning_threshold", value).apply()
+    }
+
+    private val _showCriticalThreshold = MutableStateFlow(
+        listDisplayPrefs.getBoolean("show_critical_threshold", false)
+    )
+    val showCriticalThreshold: StateFlow<Boolean> = _showCriticalThreshold.asStateFlow()
+
+    fun setShowCriticalThreshold(value: Boolean) {
+        _showCriticalThreshold.value = value
+        listDisplayPrefs.edit().putBoolean("show_critical_threshold", value).apply()
     }
 
     private val _showBatteryHistory = MutableStateFlow(

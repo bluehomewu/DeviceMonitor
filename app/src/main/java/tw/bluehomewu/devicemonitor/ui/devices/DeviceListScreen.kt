@@ -179,7 +179,8 @@ fun DeviceListScreen(
     val isRealtimeConnected by vm.isRealtimeConnected.collectAsStateWithLifecycle()
     val selectedIds by vm.selectedIds.collectAsStateWithLifecycle()
     val sortOrder by vm.sortOrder.collectAsStateWithLifecycle()
-    val showAlertThreshold by vm.showAlertThreshold.collectAsStateWithLifecycle()
+    val showWarningThreshold by vm.showWarningThreshold.collectAsStateWithLifecycle()
+    val showCriticalThreshold by vm.showCriticalThreshold.collectAsStateWithLifecycle()
     val showBatteryHistory by vm.showBatteryHistory.collectAsStateWithLifecycle()
 
     val listState = rememberLazyListState()
@@ -360,9 +361,16 @@ fun DeviceListScreen(
                         )
                         HorizontalDivider()
                         DropdownMenuItem(
-                            text = { Text("顯示警報閾值") },
-                            onClick = { vm.setShowAlertThreshold(!showAlertThreshold) },
-                            trailingIcon = if (showAlertThreshold) ({
+                            text = { Text("顯示警告閾值") },
+                            onClick = { vm.setShowWarningThreshold(!showWarningThreshold) },
+                            trailingIcon = if (showWarningThreshold) ({
+                                Icon(Icons.Default.Check, contentDescription = null, modifier = Modifier.size(16.dp))
+                            }) else null
+                        )
+                        DropdownMenuItem(
+                            text = { Text("顯示緊急閾值") },
+                            onClick = { vm.setShowCriticalThreshold(!showCriticalThreshold) },
+                            trailingIcon = if (showCriticalThreshold) ({
                                 Icon(Icons.Default.Check, contentDescription = null, modifier = Modifier.size(16.dp))
                             }) else null
                         )
@@ -440,7 +448,8 @@ fun DeviceListScreen(
                             onThresholdChange = { vm.setAlertThreshold(dev.id, it) },
                             batteryHistory = vm.getBatteryHistory(dev.id),
                             showBatteryHistory = showBatteryHistory,
-                            showAlertThreshold = showAlertThreshold,
+                            showWarningThreshold = showWarningThreshold,
+                            showCriticalThreshold = showCriticalThreshold,
                             onAliasChange = { vm.setAlias(dev.id, it) },
                             onPinToggle = {}
                         )
@@ -516,7 +525,8 @@ fun DeviceListScreen(
                             onCriticalThresholdChange = { vm.setCriticalThreshold(dev.id, it) },
                             batteryHistory = vm.getBatteryHistory(dev.id),
                             showBatteryHistory = showBatteryHistory,
-                            showAlertThreshold = showAlertThreshold,
+                            showWarningThreshold = showWarningThreshold,
+                            showCriticalThreshold = showCriticalThreshold,
                             onAliasChange = { vm.setAlias(dev.id, it) },
                             onPinToggle = { vm.togglePin(dev.id) }
                         )
@@ -582,7 +592,8 @@ fun DeviceListScreen(
                             onCriticalThresholdChange = { vm.setCriticalThreshold(dev.id, it) },
                             batteryHistory = vm.getBatteryHistory(dev.id),
                             showBatteryHistory = showBatteryHistory,
-                            showAlertThreshold = showAlertThreshold,
+                            showWarningThreshold = showWarningThreshold,
+                            showCriticalThreshold = showCriticalThreshold,
                             onAliasChange = { vm.setAlias(dev.id, it) },
                             onPinToggle = { vm.togglePin(dev.id) }
                         )
@@ -699,7 +710,8 @@ private fun DeviceCard(
     onCriticalThresholdChange: (Int) -> Unit = {},
     batteryHistory: List<Int> = emptyList(),
     showBatteryHistory: Boolean = false,
-    showAlertThreshold: Boolean = false,
+    showWarningThreshold: Boolean = false,
+    showCriticalThreshold: Boolean = false,
     onAliasChange: (String) -> Unit,
     onPinToggle: () -> Unit,
     onDragStart: () -> Unit = {},
@@ -926,7 +938,7 @@ private fun DeviceCard(
                         .height(56.dp)
                 )
             }
-            if (showAlertThreshold) {
+            if (showWarningThreshold) {
                 HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -944,6 +956,9 @@ private fun DeviceCard(
                     steps = 8,
                     modifier = Modifier.fillMaxWidth()
                 )
+            }
+            if (showCriticalThreshold) {
+                HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     verticalAlignment = Alignment.CenterVertically,
